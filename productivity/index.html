@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Work / Productivity App — Stock Filming Tool</title>
+<style>
+:root{
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --bg:#F2F3F6; --surface:#FFFFFF; --surface-2:#F6F7F9;
+  --text:#0E1116; --muted:#6A7280; --faint:#9AA1AC; --line:#E6E8EC;
+  --shadow:0 18px 50px -24px rgba(16,20,30,.30); --shadow-sm:0 6px 20px -12px rgba(16,20,30,.30);
+  --ok:#11936B; --ok-soft:#E6F5EE; --statusink:#0E1116;
+  --accent:#3F4756; --accent-2:#6B7686; --accent-soft:color-mix(in srgb,var(--accent) 13%,var(--surface));
+}
+.dark{
+  --bg:#0B0D11; --surface:#15191F; --surface-2:#1B2027;
+  --text:#F3F5F8; --muted:#9BA3AE; --faint:#6B7480; --line:#262C34;
+  --shadow:0 24px 60px -22px rgba(0,0,0,.7); --shadow-sm:0 8px 24px -14px rgba(0,0,0,.6);
+  --ok:#2FBE8C; --ok-soft:#11271F; --statusink:#F3F5F8;
+  --accent-soft:color-mix(in srgb,var(--accent) 22%,var(--surface));
+}
+*{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; -webkit-touch-callout:none;
+  -webkit-user-select:none; -moz-user-select:none; -ms-user-select:none; user-select:none; -webkit-user-drag:none; }
+html,body{ height:100%; margin:0; }
+body{ font-family:var(--font); background:var(--bg); color:var(--text); overflow:hidden; position:fixed; inset:0; transition:background .35s,color .35s; touch-action:manipulation; }
+#home,#stage{ position:absolute; inset:0; display:flex; flex-direction:column; background:var(--bg); }
+#stage{ cursor:pointer; }
+.hidden{ display:none !important; }
+.statusbar{ flex:0 0 auto; height:54px; padding:0 26px 8px; display:flex; align-items:flex-end; justify-content:space-between; color:var(--statusink); font-size:15px; font-weight:600; }
+.statusbar .sig{ display:flex; align-items:center; gap:7px; } .statusbar .stroke{ fill:var(--statusink); }
+.body{ flex:1; display:flex; flex-direction:column; padding:0 24px; }
+.center-col{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; }
+.eyebrow{ font-size:12.5px; font-weight:700; letter-spacing:.18em; text-transform:uppercase; color:var(--muted); }
+.paylabel{ font-size:30px; font-weight:800; letter-spacing:-.02em; line-height:1.12; }
+.h1{ font-size:30px; font-weight:800; letter-spacing:-.02em; line-height:1.1; }
+.brandmark{ font-size:15px; font-weight:800; letter-spacing:.30em; text-transform:uppercase; }
+.muted{ color:var(--muted); } .small{ font-size:13.5px; }
+.tap-hint{ animation:hintFade 1.8s ease-in-out infinite; } @keyframes hintFade{ 0%,100%{opacity:.5} 50%{opacity:1} }
+
+.disc{ width:150px; height:150px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin-bottom:24px; animation:pop .5s cubic-bezier(.2,.9,.3,1.3) both; }
+.disc svg{ width:64px; height:64px; }
+.disc.accent{ background:var(--accent-soft); color:var(--accent); }
+.disc.pulse{ animation:pop .5s both, discPulse 1.9s .45s ease-in-out infinite; }
+@keyframes discPulse{ 0%,100%{transform:scale(1)} 50%{transform:scale(1.05)} }
+@keyframes pop{ 0%{transform:scale(.45);opacity:0} 100%{transform:scale(1);opacity:1} }
+.spinner{ width:116px; height:116px; border-radius:50%; border:6px solid var(--line); border-top-color:var(--accent); animation:spin 1s linear infinite; margin-bottom:24px; }
+@keyframes spin{ to{ transform:rotate(360deg); } }
+
+/* success tick */
+.suc{ position:relative; width:150px; height:150px; display:flex; align-items:center; justify-content:center; margin-bottom:24px; }
+.suc .ripple{ position:absolute; inset:0; border-radius:50%; border:3px solid var(--accent); opacity:0; animation:ripple .85s .1s ease-out; }
+.suc .circle{ position:absolute; inset:0; border-radius:50%; background:var(--accent); animation:pop .42s cubic-bezier(.2,.9,.3,1.3) both; }
+.suc svg{ position:relative; z-index:2; width:78px; height:78px; }
+.suc .tick{ fill:none; stroke:#fff; stroke-width:3; stroke-linecap:round; stroke-linejoin:round; stroke-dasharray:80; stroke-dashoffset:80; animation:draw .5s .2s ease forwards; }
+@keyframes draw{ to{ stroke-dashoffset:0; } }
+@keyframes ripple{ 0%{transform:scale(.55);opacity:.55} 100%{transform:scale(1.7);opacity:0} }
+
+/* cards */
+.tcard{ width:90%; max-width:350px; background:var(--surface); border:1px solid var(--line); border-radius:20px; box-shadow:var(--shadow-sm); padding:20px; text-align:left; }
+.pop-in{ animation:cardIn .5s cubic-bezier(.2,.9,.3,1.2) both; } @keyframes cardIn{ 0%{opacity:0;transform:translateY(16px) scale(.97)} 100%{opacity:1;transform:none} }
+.trow{ display:flex; align-items:center; justify-content:space-between; padding:11px 0; border-bottom:1px solid var(--line); } .trow:last-child{ border-bottom:none; }
+.trow .ti{ display:flex; align-items:center; gap:11px; font-weight:650; font-size:15px; } .trow .ti svg{ width:20px; height:20px; color:var(--accent); }
+.trow .tv{ color:var(--muted); font-size:14px; font-weight:600; }
+.cap{ font-size:12.5px; color:var(--muted); font-weight:600; text-align:center; }
+.fx{ font-size:44px; font-weight:800; letter-spacing:-.02em; text-align:center; }
+.unit{ font-size:17px; color:var(--muted); font-weight:600; }
+.ringwrap{ position:relative; width:188px; height:188px; margin-bottom:10px; }
+.ringwrap svg{ width:188px; height:188px; transform:rotate(-90deg); }
+.ring-track{ fill:none; stroke:var(--line); stroke-width:14; }
+.ring-prog{ fill:none; stroke:var(--accent); stroke-width:14; stroke-linecap:round; transition:stroke-dashoffset 1.4s cubic-bezier(.2,.7,.2,1); }
+.ring-center{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+.ring-center .big{ font-size:36px; font-weight:800; letter-spacing:-.02em; } .ring-center .sub{ font-size:12px; color:var(--muted); font-weight:700; letter-spacing:.1em; text-transform:uppercase; }
+.clist{ width:90%; max-width:350px; background:var(--surface); border:1px solid var(--line); border-radius:20px; box-shadow:var(--shadow-sm); padding:6px 20px; text-align:left; }
+.crow{ display:flex; align-items:center; gap:14px; padding:16px 0; border-bottom:1px solid var(--line); } .crow:last-child{ border-bottom:none; }
+.cbox{ width:28px; height:28px; border-radius:9px; border:2px solid var(--line); flex:0 0 28px; display:flex; align-items:center; justify-content:center; color:#fff; transition:background .3s,border-color .3s; }
+.cbox svg{ width:16px; height:16px; } .cbox .ck{ stroke-dasharray:30; stroke-dashoffset:30; }
+.crow.done .cbox{ background:var(--accent); border-color:transparent; } .crow.done .cbox .ck{ animation:draw .4s forwards; }
+.crow .ctext{ font-size:16px; font-weight:600; flex:1; transition:color .3s; } .crow.done .ctext{ color:var(--text); }
+.tag{ display:inline-block; padding:5px 11px; border-radius:9px; font-size:11.5px; font-weight:800; letter-spacing:.02em; white-space:nowrap; }
+.bar{ height:13px; border-radius:7px; background:var(--line); overflow:hidden; } .bar > i{ display:block; height:100%; width:0; border-radius:7px; background:linear-gradient(90deg,var(--accent),var(--accent-2)); transition:width 1.1s cubic-bezier(.2,.7,.2,1); }
+.barrow{ margin:15px 0; } .barrow:first-child{ margin-top:6px; } .barrow .bl{ display:flex; justify-content:space-between; font-size:14.5px; font-weight:700; margin-bottom:8px; }
+.msgwrap{ display:flex; flex-direction:column; gap:11px; width:90%; max-width:350px; }
+.msgmeta{ display:flex; align-items:center; gap:10px; margin-bottom:2px; } .msgmeta .av{ width:36px; height:36px; border-radius:50%; background:var(--accent-soft); color:var(--accent); display:flex; align-items:center; justify-content:center; } .msgmeta .av svg{ width:20px; height:20px; } .msgmeta .nm{ font-weight:750; font-size:14.5px; } .msgmeta .tm{ color:var(--faint); font-size:12.5px; margin-left:auto; }
+.bubble{ max-width:84%; padding:14px 16px; border-radius:17px; font-size:15.5px; font-weight:500; line-height:1.4; }
+.bubble.them{ background:var(--surface-2); border:1px solid var(--line); border-bottom-left-radius:5px; align-self:flex-start; } .bubble.me{ background:var(--accent); color:#fff; border-bottom-right-radius:5px; align-self:flex-end; }
+.compose{ display:flex; align-items:center; gap:10px; margin-top:4px; background:var(--surface); border:1.5px solid var(--accent); border-radius:15px; padding:11px 13px; }
+.compose .field{ flex:1; font-size:15.5px; font-weight:500; color:var(--text); } .compose .send{ width:36px; height:36px; border-radius:50%; background:var(--accent); color:#fff; display:flex; align-items:center; justify-content:center; flex:0 0 36px; } .compose .send svg{ width:18px; height:18px; }
+.caret{ display:inline-block; width:2px; height:17px; background:var(--accent); vertical-align:-3px; margin-left:1px; animation:caretb .8s step-end infinite; } @keyframes caretb{ 50%{opacity:0} }
+.reportbars{ display:flex; align-items:flex-end; gap:11px; height:104px; padding:4px 2px 0; } .reportbars i{ flex:1; background:linear-gradient(180deg,var(--accent-2),var(--accent)); border-radius:5px 5px 2px 2px; height:0; transition:height .9s cubic-bezier(.2,.7,.2,1); }
+.uppct{ font-weight:800; font-size:15px; }
+.vcall{ width:90%; max-width:350px; border-radius:24px; overflow:hidden; box-shadow:var(--shadow-sm); border:1px solid var(--line); }
+.vcall .feed{ position:relative; height:230px; background:linear-gradient(160deg,var(--accent),var(--accent-2)); display:flex; align-items:center; justify-content:center; }
+.vcall .feed .avatar{ width:96px; height:96px; border-radius:50%; background:rgba(255,255,255,.22); display:flex; align-items:center; justify-content:center; color:#fff; } .vcall .feed .avatar svg{ width:54px; height:54px; }
+.vcall .selfie{ position:absolute; right:12px; bottom:12px; width:54px; height:74px; border-radius:11px; background:rgba(0,0,0,.26); border:1.5px solid rgba(255,255,255,.5); }
+.vcall .nm{ position:absolute; left:14px; bottom:13px; color:#fff; font-weight:750; font-size:15px; text-shadow:0 1px 5px rgba(0,0,0,.35); }
+.vcall .ctrls{ display:flex; align-items:center; justify-content:center; gap:18px; padding:16px; background:var(--surface); }
+.vcall .cbtn{ width:52px; height:52px; border-radius:50%; background:var(--surface-2); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; color:var(--text); } .vcall .cbtn svg{ width:23px; height:23px; }
+.vcall .cbtn.end{ background:#E0564B; border-color:transparent; color:#fff; }
+.live-dot{ display:inline-flex; align-items:center; gap:6px; position:absolute; left:14px; top:13px; color:#fff; font-size:11px; font-weight:800; letter-spacing:.14em; }
+.live-dot::before{ content:""; width:8px; height:8px; border-radius:50%; background:#fff; animation:blink2 1.2s infinite; } @keyframes blink2{ 0%,100%{opacity:1} 50%{opacity:.25} }
+
+/* home */
+.home-grid{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:13px; padding-bottom:84px; }
+.sector{ background:var(--surface); border:1px solid var(--line); border-radius:22px; padding:18px 8px 16px; text-align:center; cursor:pointer; position:relative; transition:transform .12s; }
+.sector:active{ transform:scale(.96); }
+.sector .sicon{ width:50px; height:50px; border-radius:15px; margin:0 auto 10px; display:flex; align-items:center; justify-content:center; color:#fff; }
+.sector .sicon svg{ width:24px; height:24px; }
+.sector .sname{ font-size:12.5px; font-weight:650; }
+
+/* handle + panel */
+#handle{ position:fixed; left:50%; bottom:0; transform:translateX(-50%); width:180px; height:54px; z-index:40; cursor:pointer; background:transparent; border:none; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding-top:7px; }
+#handle .bar{ width:56px; height:6px; border-radius:999px; background:var(--faint); opacity:.65; transition:opacity .2s,transform .2s; }
+#handle .chev{ margin-top:4px; color:var(--faint); opacity:.6; } #handle .chev svg{ width:18px; height:18px; display:block; }
+#handle:active .bar,#handle:active .chev{ opacity:1; } #handle:active .bar{ transform:scaleX(1.18); }
+#backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.45); opacity:0; visibility:hidden; transition:opacity .3s,visibility .3s; z-index:60; }
+#backdrop.open{ opacity:1; visibility:visible; }
+#panel{ position:fixed; left:0; right:0; bottom:0; max-height:88vh; background:var(--surface); border-radius:24px 24px 0 0; box-shadow:0 -22px 60px -20px rgba(0,0,0,.55); border-top:1px solid var(--line); transform:translateY(101%); transition:transform .34s cubic-bezier(.2,.7,.25,1); z-index:61; display:flex; flex-direction:column; }
+#panel.open{ transform:translateY(0); }
+.panel-head{ display:flex; align-items:center; justify-content:space-between; padding:16px 20px 12px; border-bottom:1px solid var(--line); position:relative; }
+.panel-head .grip{ position:absolute; left:50%; top:7px; transform:translateX(-50%); width:42px; height:5px; border-radius:999px; background:var(--line); }
+.panel-head .t{ font-size:17px; font-weight:750; } .panel-head .t span:last-child{ color:var(--muted); font-weight:500; font-size:13px; margin-left:8px; }
+.panel-head .x{ width:38px; height:38px; border-radius:50%; border:1px solid var(--line); background:var(--surface-2); color:var(--text); font-size:19px; cursor:pointer; }
+.panel-body{ overflow-y:auto; padding:18px 20px 26px; }
+.sec{ margin-bottom:20px; } .sec:last-child{ margin-bottom:0; }
+.sec .lbl{ font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); font-weight:700; margin-bottom:10px; }
+.chips{ display:flex; gap:8px; flex-wrap:wrap; }
+.chip{ display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:10px 15px; border-radius:13px; background:var(--surface-2); color:var(--text); font-size:14px; font-weight:600; border:1.5px solid var(--line); cursor:pointer; }
+.chip.on{ background:var(--accent); color:#fff; border-color:transparent; }
+.optrow{ display:flex; align-items:center; justify-content:space-between; padding:13px 0; border-bottom:1px solid var(--line); } .optrow:last-child{ border-bottom:none; }
+.optrow .on-name{ font-size:15px; font-weight:600; }
+.switch{ width:52px; height:31px; border-radius:999px; background:var(--line); position:relative; cursor:pointer; flex:0 0 auto; transition:background .2s; } .switch.on{ background:var(--accent); }
+.switch::after{ content:""; position:absolute; top:3px; left:3px; width:25px; height:25px; border-radius:50%; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.3); transition:left .2s; } .switch.on::after{ left:24px; }
+.minibtn{ padding:9px 16px; border-radius:11px; border:1.5px solid var(--line); background:var(--surface-2); color:var(--text); font-weight:650; font-size:14px; cursor:pointer; font-family:var(--font); }
+.resetbtn{ width:100%; padding:14px; border-radius:14px; border:none; background:var(--accent); color:#fff; font-weight:700; font-size:16px; cursor:pointer; font-family:var(--font); margin-top:6px; }
+.navbtn{ width:100%; display:flex; align-items:center; gap:10px; padding:14px 16px; border-radius:14px; border:1px solid var(--line); background:var(--surface-2); color:var(--text); font-weight:700; font-size:15px; cursor:pointer; font-family:var(--font); margin-bottom:18px; } .navbtn svg{ width:20px; height:20px; }
+</style>
+</head>
+<body>
+<div id="home"></div>
+<div id="stage" class="hidden"></div>
+<div id="handle" title="Open controls"><span class="bar"></span><span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg></span></div>
+<div id="backdrop"></div>
+<div id="panel">
+  <div class="panel-head"><span class="grip"></span>
+    <div class="t"><span data-en="Director controls" data-tr="Yönetmen paneli">Director controls</span><span data-en="backstage" data-tr="kulis">backstage</span></div>
+    <button class="x" id="closeBtn">×</button>
+  </div>
+  <div class="panel-body" id="panelBody"></div>
+</div>
+<script>
+(function(){
+var lang='en', mode='home', timer=null, tok=0;
+var reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+var state={ fmod:'tasks', scene:'idle', tscenario:'task_done', tstyle:'minimal', loop:false };
+
+function svgI(p,sw){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="'+(sw||2)+'" stroke-linecap="round" stroke-linejoin="round">'+p+'</svg>'; }
+var IC={
+  task:'<path d="M9 11l3 3L21 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',
+  flag:'<path d="M5 21V4M5 4h11l-2 4 2 4H5"/>',
+  cal:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/>',
+  bell:'<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21h4"/>',
+  video:'<rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3z"/>',
+  user:'<circle cx="12" cy="8" r="4"/><path d="M5 20c0-3.5 3.1-6 7-6s7 2.5 7 6"/>',
+  users:'<circle cx="8" cy="9" r="3"/><path d="M2 20c0-3 2.7-5 6-5s6 2 6 5"/><path d="M16 7a3 3 0 0 1 0 6M22 20c0-2.5-1.5-4.3-4-4.8"/>',
+  msg:'<path d="M4 5h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H9l-5 4V6a1 1 0 0 1 1-1z"/>',
+  send:'<path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/>',
+  file:'<path d="M6 2h8l6 6v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/><path d="M14 2v6h6"/>',
+  upload:'<path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 20h16"/>',
+  sync:'<path d="M4 9a8 8 0 0 1 13-3l3 3M20 15a8 8 0 0 1-13 3l-3-3"/><path d="M17 3v3h-3M7 21v-3h3"/>',
+  chart:'<path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3.5 2"/>',
+  alert:'<path d="M12 3l9 16H3z"/><path d="M12 10v4M12 17h.01"/>',
+  pin:'<path d="M12 21s7-6 7-11a7 7 0 1 0-14 0c0 5 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/>',
+  star:'<path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.8 6.5 20.2l1-6.2L3 9.6l6.2-.9z"/>',
+  folder:'<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>'
+};
+function status(){ return '<div class="statusbar"><span>9:24</span><span class="sig">'+
+  '<svg width="19" height="13" viewBox="0 0 19 13"><rect class="stroke" x="0" y="9" width="3" height="4" rx="1"/><rect class="stroke" x="5" y="6" width="3" height="7" rx="1"/><rect class="stroke" x="10" y="3" width="3" height="10" rx="1"/><rect class="stroke" x="15" y="0" width="3" height="13" rx="1"/></svg>'+
+  '<svg width="17" height="13" viewBox="0 0 17 13"><path class="stroke" d="M8.5 2.5c2.6 0 5 1 6.8 2.7l-1.4 1.5C12.5 5.4 10.6 4.6 8.5 4.6S4.5 5.4 3.1 6.7L1.7 5.2C3.5 3.5 5.9 2.5 8.5 2.5z"/></svg>'+
+  '<svg width="27" height="13" viewBox="0 0 27 13"><rect x="0" y="0" width="22" height="13" rx="3.5" fill="none" stroke-width="1.4" style="stroke:var(--statusink)"/><rect class="stroke" x="2" y="2" width="16" height="9" rx="1.8"/><rect class="stroke" x="23" y="4" width="2.2" height="5" rx="1"/></svg>'+
+  '</span></div>'; }
+function applyLang(scope){ scope.querySelectorAll('[data-en]').forEach(function(el){ var x=el.getAttribute('data-'+lang); if(x!==null) el.textContent=x; }); }
+var raf={a:null,b:null};
+function stopAnims(){ if(raf.a){cancelAnimationFrame(raf.a);raf.a=null;} if(raf.b){cancelAnimationFrame(raf.b);raf.b=null;} }
+function restart(el){ el.style.animation='none'; void el.offsetWidth; el.style.animation=''; }
+var stage=document.getElementById('stage'), home=document.getElementById('home');
+
+/* ===== styles + helpers ===== */
+var TSTYLE={ minimal:{a:'#3F4756',a2:'#6B7686',dark:false}, corporate:{a:'#2156C9',a2:'#4E84F0',dark:false}, remote:{a:'#0E9488',a2:'#33B6A8',dark:false}, creative:{a:'#7C3AED',a2:'#A56BF5',dark:false}, dark:{a:'#5BA8FF',a2:'#86C2FF',dark:true}, soft:{a:'#E0884A',a2:'#F2AE78',dark:false} };
+function tAccent(){ var S=TSTYLE[state.tstyle]; stage.style.setProperty('--accent',S.a); stage.style.setProperty('--accent-2',S.a2); }
+function applyStyle(){ var d=TSTYLE[state.tstyle].dark; document.body.classList.toggle('dark',d); var sw=document.getElementById('themeSw'); if(sw) sw.classList.toggle('on',d); }
+function lbl(en,tr){ return '<p class="paylabel" style="margin-top:22px" data-en="'+en+'" data-tr="'+tr+'">'+en+'</p>'; }
+function tickDisc(){ return '<div class="suc"><span class="ripple"></span><span class="circle"></span><svg viewBox="0 0 24 24"><path class="tick" d="M5 13l4 4L19 7"/></svg></div>'; }
+function ringHTML(pct,big,subEn,subTr){ var r=82,c=2*Math.PI*r,off=c*(1-pct/100); return '<div class="ringwrap"><svg viewBox="0 0 188 188"><circle class="ring-track" cx="94" cy="94" r="'+r+'"/><circle class="ring-prog" cx="94" cy="94" r="'+r+'" stroke-dasharray="'+c+'" stroke-dashoffset="'+c+'" data-off="'+off+'"/></svg><div class="ring-center"><div class="big">'+big+'</div><div class="sub" data-en="'+subEn+'" data-tr="'+subTr+'">'+subEn+'</div></div></div>'; }
+function countUp(el,target,suffix){ if(!el) return; suffix=suffix||''; if(reduce){ el.textContent=target.toLocaleString('en-US')+suffix; return; } var s=performance.now(),dur=1100; (function f(now){ var p=Math.min(1,(now-s)/dur); var e=1-Math.pow(1-p,3); el.textContent=Math.round(target*e).toLocaleString('en-US')+suffix; if(p<1) raf.a=requestAnimationFrame(f); })(performance.now()); }
+
+/* ===== idle + step engine ===== */
+function tRender(name){ if(timer){clearTimeout(timer);timer=null;} stopAnims(); tok++; state.scene=name; tAccent();
+  var inner='<div class="center-col"><div class="disc accent pulse">'+svgI(IC.task,1.9)+'</div>'+
+    '<p class="eyebrow" data-en="Ready" data-tr="Hazır">Ready</p>'+
+    '<p class="eyebrow tap-hint" style="margin-top:14px" data-en="Tap to continue" data-tr="Devam için dokun">Tap to continue</p></div>';
+  stage.innerHTML=status()+'<div class="body">'+inner+'</div>'; applyLang(stage); }
+
+function tStep(st){ stopAnims(); tok++; var my=tok; state.scene=st.final?'final':'play'; tAccent();
+  var t=st.type, label = st.en?lbl(st.en,st.tr):'', inner='';
+  var sub = st.sub?'<p class="cap" style="margin-top:10px" data-en="'+st.sub+'" data-tr="'+(st.subtr||st.sub)+'">'+st.sub+'</p>':'';
+  if(t==='proc'){ inner='<div class="center-col"><div class="spinner"></div>'+label+sub+'</div>'; }
+  else if(t==='check'){ inner='<div class="center-col">'+tickDisc()+label+sub+'</div>'; }
+  else if(t==='taskcard'){ inner='<div class="center-col"><div class="tcard pop-in"><div style="display:flex;align-items:flex-start;gap:13px"><span class="cbox" style="margin-top:1px"></span><div style="flex:1"><div style="font-weight:750;font-size:17px" data-en="Design review" data-tr="Tasarım incelemesi">Design review</div><div class="cap" style="text-align:left;margin-top:4px" data-en="Due tomorrow" data-tr="Yarın teslim">Due tomorrow</div></div><span class="tag" style="'+(st.accent?'background:var(--accent);color:#fff':'background:var(--accent-soft);color:var(--accent)')+'" data-en="'+st.tag+'" data-tr="'+st.tagTr+'">'+st.tag+'</span></div></div>'+label+'</div>'; }
+  else if(t==='tasklist'){ var items=[['task','Design review','Tasarım incelemesi'],['task','Update specs','Dokümanı güncelle'],['task','Send report','Raporu gönder']]; var rows=items.map(function(it){ return '<div class="crow"><span class="cbox"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path class="ck" d="M5 13l4 4L19 7"/></svg></span><span class="ctext" data-en="'+it[1]+'" data-tr="'+it[2]+'">'+it[1]+'</span></div>'; }).join(''); inner='<div class="center-col"><div class="clist pop-in">'+rows+'</div>'+label+'</div>'; }
+  else if(t==='cal'){ inner='<div class="center-col"><div class="tcard pop-in"><div style="display:flex;align-items:center;gap:14px;margin-bottom:8px"><div class="disc accent" style="width:56px;height:56px;margin:0;flex-direction:column"><div style="font-size:11px;font-weight:700;opacity:.85" data-en="TUE" data-tr="SAL">TUE</div><div style="font-size:20px;font-weight:800;line-height:1">12</div></div><div><div style="font-weight:800;font-size:17px" data-en="Team Meeting" data-tr="Ekip Toplantısı">Team Meeting</div><div class="cap" style="text-align:left" data-en="Video &middot; 30 min" data-tr="Video &middot; 30 dk">Video &middot; 30 min</div></div></div><div class="trow"><span class="ti">'+svgI(IC.clock,1.8)+'<span data-en="Time" data-tr="Saat">Time</span></span><span class="tv">10:00</span></div></div>'+label+'</div>'; }
+  else if(t==='reminder'){ inner='<div class="center-col"><div class="disc accent">'+svgI(IC[st.ric]||IC.bell,1.7)+'</div>'+label+'<div class="tcard pop-in" style="margin-top:18px"><div class="trow"><span class="ti">'+svgI(IC[st.ric]||IC.bell,1.7)+'<span data-en="'+st.rtEn+'" data-tr="'+st.rtTr+'">'+st.rtEn+'</span></span><span class="tv" data-en="'+st.rtime+'" data-tr="'+(st.rtimeTr||st.rtime)+'">'+st.rtime+'</span></div></div></div>'; }
+  else if(t==='video'){ inner='<div class="center-col"><div class="vcall pop-in"><div class="feed"><span class="live-dot" data-en="LIVE" data-tr="CANLI">LIVE</span><div class="avatar">'+svgI(IC.users,1.5)+'</div><span class="nm" data-en="Team Call" data-tr="Ekip Görüşmesi">Team Call</span><span class="selfie"></span></div><div class="ctrls"><span class="cbtn">'+svgI(IC.video,1.7)+'</span><span class="cbtn">'+svgI(IC.user,1.7)+'</span><span class="cbtn end">'+svgI(IC.bell,1.6)+'</span></div></div>'+label+'</div>'; }
+  else if(t==='agenda'){ inner='<div class="center-col"><div class="tcard pop-in"><div style="font-weight:800;font-size:16px;margin:4px 0 6px" data-en="Agenda" data-tr="Gündem">Agenda</div><div class="trow"><span class="ti">'+svgI(IC.task,1.7)+'<span data-en="Updates" data-tr="Güncellemeler">Updates</span></span><span class="tv">10m</span></div><div class="trow"><span class="ti">'+svgI(IC.chart,1.7)+'<span data-en="Review" data-tr="İnceleme">Review</span></span><span class="tv">15m</span></div><div class="trow"><span class="ti">'+svgI(IC.flag,1.7)+'<span data-en="Next steps" data-tr="Sonraki adımlar">Next steps</span></span><span class="tv">5m</span></div></div>'+label+'</div>'; }
+  else if(t==='message'){ if(st.kind==='chat'){ inner='<div class="center-col"><div class="msgwrap pop-in"><div class="msgmeta"><span class="av">'+svgI(IC.user,1.6)+'</span><span class="nm" data-en="Team" data-tr="Ekip">Team</span><span class="tm">09:24</span></div><div class="bubble them" data-en="Can you review the latest draft?" data-tr="Son taslağı inceleyebilir misin?">Can you review the latest draft?</div></div>'+label+'</div>'; } else if(st.kind==='update'){ inner='<div class="center-col"><div class="tcard pop-in"><div style="display:flex;align-items:center;gap:10px;font-weight:800;font-size:16px;margin-bottom:4px">'+svgI(IC.users,1.7)+'<span data-en="Team update" data-tr="Ekip güncellemesi">Team update</span></div><div class="trow"><span class="ti">'+svgI(IC.task,1.6)+'<span data-en="Sprint on track" data-tr="Sprint yolunda">Sprint on track</span></span></div><div class="trow"><span class="ti">'+svgI(IC.clock,1.6)+'<span data-en="Review at 3 PM" data-tr="İnceleme 15:00">Review at 3 PM</span></span></div></div>'+label+'</div>'; } else { inner='<div class="center-col"><div class="tcard pop-in" style="display:flex;align-items:center;gap:14px"><div class="disc accent" style="width:48px;height:48px;margin:0">'+svgI(IC.bell,1.7)+'</div><div><div style="font-weight:750;font-size:16px" data-en="New notification" data-tr="Yeni bildirim">New notification</div><div class="cap" style="text-align:left" data-en="You have a new update" data-tr="Yeni bir güncellemen var">You have a new update</div></div></div>'+label+'</div>'; } }
+  else if(t==='reply'){ inner='<div class="center-col"><div class="msgwrap pop-in"><div class="bubble them" data-en="Can you send the report?" data-tr="Raporu gönderir misin?">Can you send the report?</div><div class="compose"><span class="field"><span data-en="On it, sending now" data-tr="Hemen gönderiyorum">On it, sending now</span><span class="caret"></span></span><span class="send">'+svgI(IC.send,2)+'</span></div></div>'+label+'</div>'; }
+  else if(t==='upload'){ inner='<div class="center-col"><div class="tcard pop-in"><div style="display:flex;align-items:center;gap:13px;margin-bottom:15px"><div class="disc accent" style="width:46px;height:46px;margin:0">'+svgI(IC[st.ic]||IC.upload,1.7)+'</div><div style="flex:1"><div style="font-weight:700;font-size:15.5px" data-en="Document.pdf" data-tr="Belge.pdf">Document.pdf</div><div class="cap" style="text-align:left">2.4 MB</div></div><div class="uppct" style="color:var(--accent)">0%</div></div><div class="bar"><i></i></div></div>'+label+'</div>'; }
+  else if(t==='filecard'){ inner='<div class="center-col"><div class="disc accent">'+svgI(IC.file,1.7)+'</div>'+label+'<div class="tcard pop-in" style="margin-top:18px"><div class="trow"><span class="ti">'+svgI(IC.file,1.7)+'<span data-en="Document.pdf" data-tr="Belge.pdf">Document.pdf</span></span><span class="tv" style="color:var(--ok);font-weight:750" data-en="'+(st.ok?'Sent':'Ready')+'" data-tr="'+(st.ok?'Gönderildi':'Hazır')+'">'+(st.ok?'Sent':'Ready')+'</span></div></div></div>'; }
+  else if(t==='progress'){ var bars=[['Design','Tasarım',80],['Build','Geliştirme',55],['Review','İnceleme',30]]; var bh=bars.map(function(b){ return '<div class="barrow"><div class="bl"><span data-en="'+b[0]+'" data-tr="'+b[1]+'">'+b[0]+'</span><span>'+b[2]+'%</span></div><div class="bar"><i data-w="'+b[2]+'"></i></div></div>'; }).join(''); inner='<div class="center-col"><div class="tcard pop-in" style="padding-top:14px;padding-bottom:14px">'+bh+'</div>'+label+'</div>'; }
+  else if(t==='report'){ var hs=[55,80,45,95,70]; var rb=hs.map(function(h){ return '<i data-h="'+h+'"></i>'; }).join(''); inner='<div class="center-col"><div class="tcard pop-in"><div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;font-weight:800;font-size:16px">'+svgI(IC.chart,1.8)+'<span data-en="Weekly Report" data-tr="Haftalık Rapor">Weekly Report</span></div><div class="reportbars">'+rb+'</div></div>'+label+'</div>'; }
+  else if(t==='milestone'){ inner='<div class="center-col"><div class="disc accent">'+svgI(IC.flag,1.7)+'</div>'+label+'<p class="cap" style="margin-top:10px" data-en="Phase 2 of 4" data-tr="4 aşamadan 2.si">Phase 2 of 4</p></div>'; }
+  else if(t==='alert'){ var col=st.sev==='high'?'#E0564B':'#E0A23A'; inner='<div class="center-col"><div class="disc" style="background:color-mix(in srgb,'+col+' 15%,var(--surface));color:'+col+'">'+svgI(IC.alert,1.8)+'</div>'+label+'<div class="tcard pop-in" style="margin-top:18px"><div class="trow"><span class="ti">'+svgI(IC.task,1.7)+'<span data-en="Project deadline" data-tr="Proje termini">Project deadline</span></span><span class="tag" style="background:color-mix(in srgb,'+col+' 16%,var(--surface));color:'+col+'" data-en="'+st.tag+'" data-tr="'+st.tagTr+'">'+st.tag+'</span></div></div></div>'; }
+  stage.innerHTML=status()+'<div class="body">'+inner+'</div>';
+  stage.querySelectorAll('.disc,.suc,.suc *').forEach(restart); applyLang(stage);
+  if(t==='ring'){ var rp=stage.querySelector('.ring-prog'); if(rp){ if(reduce) rp.style.strokeDashoffset=rp.getAttribute('data-off'); else requestAnimationFrame(function(){ rp.style.strokeDashoffset=rp.getAttribute('data-off'); }); } }
+  if(t==='tasklist'){ stage.querySelectorAll('.crow').forEach(function(r,i){ if(reduce){ r.classList.add('done'); return; } setTimeout(function(){ if(my===tok) r.classList.add('done'); }, 380+i*460); }); }
+  if(t==='upload'){ var bi=stage.querySelector('.bar > i'); if(bi){ if(reduce) bi.style.width='100%'; else requestAnimationFrame(function(){ bi.style.width='100%'; }); } countUp(stage.querySelector('.uppct'),100,'%'); }
+  if(t==='progress'){ stage.querySelectorAll('.bar > i').forEach(function(bi){ var w=bi.getAttribute('data-w')+'%'; if(reduce) bi.style.width=w; else requestAnimationFrame(function(){ bi.style.width=w; }); }); }
+  if(t==='report'){ stage.querySelectorAll('.reportbars i').forEach(function(b){ var h=b.getAttribute('data-h')+'%'; if(reduce) b.style.height=h; else requestAnimationFrame(function(){ b.style.height=h; }); }); }
+}
+
+var FLOW=(function(){
+  function P(en,tr,dur,sub){ return {type:'proc',en:en,tr:tr,dur:dur||1400,sub:sub}; }
+  return {
+    /* Tasks */
+    task_added:[ P('Adding task','Görev ekleniyor',1300), {type:'taskcard',tag:'New',tagTr:'Yeni',accent:false,en:'Task Added',tr:'Görev Eklendi',final:true} ],
+    task_done:[ P('Completing task','Görev tamamlanıyor',1300), {type:'check',en:'Task Completed',tr:'Görev Tamamlandı',sub:'Design review',subtr:'Tasarım incelemesi',final:true} ],
+    task_priority:[ P('Updating priority','Öncelik güncelleniyor',1300), {type:'taskcard',tag:'High Priority',tagTr:'Yüksek Öncelik',accent:true,en:'Priority Updated',tr:'Öncelik Güncellendi',final:true} ],
+    task_list:[ P('Loading tasks','Görevler yükleniyor',1400), {type:'tasklist',en:'Task List Ready',tr:'Görev Listesi Hazır',final:true} ],
+    /* Meetings */
+    meet_sched:[ P('Scheduling','Planlanıyor',1300), {type:'cal',en:'Meeting Scheduled',tr:'Toplantı Planlandı',final:true} ],
+    meet_remind:[ P('Preparing','Hazırlanıyor',1200), {type:'reminder',ric:'cal',rtEn:'Team meeting',rtTr:'Ekip toplantısı',rtime:'10:00',en:'Meeting Reminder',tr:'Toplantı Hatırlatıcısı',final:true} ],
+    meet_video:[ P('Connecting','Bağlanıyor',1500), {type:'video',en:'Video Call Ready',tr:'Görüntülü Arama Hazır',final:true} ],
+    meet_agenda:[ P('Preparing agenda','Gündem hazırlanıyor',1300), {type:'agenda',en:'Agenda Ready',tr:'Gündem Hazır',final:true} ],
+    /* Team message */
+    msg_received:[ P('Receiving','Alınıyor',1200), {type:'message',kind:'chat',en:'Message Received',tr:'Mesaj Alındı',final:true} ],
+    msg_reply:[ P('Drafting reply','Yanıt yazılıyor',1300), {type:'reply',en:'Reply Drafted',tr:'Yanıt Taslağı Hazır',final:true} ],
+    msg_update:[ P('Preparing update','Güncelleme hazırlanıyor',1300), {type:'message',kind:'update',en:'Team Update Ready',tr:'Ekip Güncellemesi Hazır',final:true} ],
+    msg_notif:[ P('Receiving','Alınıyor',1100), {type:'message',kind:'notif',en:'Notification Received',tr:'Bildirim Alındı',final:true} ],
+    /* File sharing */
+    file_upload:[ P('Uploading','Yükleniyor',1300), {type:'upload',ic:'upload',en:'File Uploaded',tr:'Dosya Yüklendi',final:true} ],
+    file_sent:[ P('Sending','Gönderiliyor',1300), {type:'filecard',ok:true,en:'File Sent',tr:'Dosya Gönderildi',final:true} ],
+    file_doc:[ P('Preparing','Hazırlanıyor',1200), {type:'filecard',ok:false,en:'Document Ready',tr:'Belge Hazır',final:true} ],
+    file_sync:[ P('Syncing','Eşitleniyor',1300), {type:'upload',ic:'sync',en:'Sync Complete',tr:'Eşitleme Tamam',final:true} ],
+    /* Project progress */
+    proj_updated:[ P('Updating project','Proje güncelleniyor',1400), {type:'progress',en:'Project Updated',tr:'Proje Güncellendi',final:true} ],
+    proj_complete:[ P('Finalizing','Tamamlanıyor',1300), {type:'ring',pct:100,big:'100%',subEn:'complete',subTr:'tamam',en:'Progress Complete',tr:'İlerleme Tamam',final:true} ],
+    proj_milestone:[ P('Updating','Güncelleniyor',1300), {type:'milestone',en:'Milestone Reached',tr:'Kilometre Taşı',final:true} ],
+    proj_report:[ P('Generating report','Rapor oluşturuluyor',1400), {type:'report',en:'Report Ready',tr:'Rapor Hazır',final:true} ],
+    /* Deadline alert */
+    dead_remind:[ P('Checking','Kontrol ediliyor',1100), {type:'reminder',ric:'clock',rtEn:'Project deadline',rtTr:'Proje termini',rtime:'Fri 17:00',rtimeTr:'Cum 17:00',en:'Deadline Reminder',tr:'Termin Hatırlatıcısı',final:true} ],
+    dead_today:[ P('Checking','Kontrol ediliyor',1100), {type:'alert',sev:'warn',tag:'Today',tagTr:'Bugün',en:'Due Today',tr:'Bugün Teslim',final:true} ],
+    dead_priority:[ P('Checking','Kontrol ediliyor',1100), {type:'alert',sev:'high',tag:'High',tagTr:'Yüksek',en:'Priority Alert',tr:'Öncelik Uyarısı',final:true} ],
+    dead_overdue:[ P('Checking','Kontrol ediliyor',1100), {type:'alert',sev:'high',tag:'Overdue',tagTr:'Gecikmiş',en:'Task Overdue',tr:'Görev Gecikti',final:true} ]
+  };
+})();
+
+function tPlay(){ var steps=FLOW[state.tscenario]||FLOW.task_done; var i=0;
+  function go(){ var st=steps[i]; tStep(st); var my=tok; i++;
+    if(i<steps.length){ timer=setTimeout(function(){ if(my===tok) go(); }, st.dur||1300); }
+    else if(state.loop){ timer=setTimeout(function(){ if(my===tok) tRender('idle'); }, 3600); } }
+  go(); }
+
+/* ===== stage interactions ===== */
+function stageTap(){ if(mode!=='health') return; if(state.scene==='idle') tPlay(); else if(state.scene==='final') tRender('idle'); }
+stage.addEventListener('click', stageTap);
+document.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+document.addEventListener('selectstart', function(e){ e.preventDefault(); });
+document.addEventListener('dragstart', function(e){ e.preventDefault(); });
+
+/* ===== panel ===== */
+var panel=document.getElementById('panel'), backdrop=document.getElementById('backdrop'), handle=document.getElementById('handle');
+function openPanel(){ panel.classList.add('open'); backdrop.classList.add('open'); }
+function closePanel(){ panel.classList.remove('open'); backdrop.classList.remove('open'); }
+handle.onclick=openPanel; backdrop.onclick=closePanel; document.getElementById('closeBtn').onclick=closePanel;
+function chip(group,val,en,tr){ return '<span class="chip" data-group="'+group+'" data-val="'+val+'" data-en="'+en+'" data-tr="'+tr+'">'+en+'</span>'; }
+var navHTML='<button class="navbtn" id="menuBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg><span data-en="Main menu" data-tr="Ana menü">Main menu</span></button>';
+function optsHTML(){ return '<div class="sec"><div class="lbl" data-en="Filming options" data-tr="Çekim seçenekleri">Filming options</div>'+
+  '<div class="optrow"><span class="on-name" data-en="Loop for filming" data-tr="Çekim için döngü">Loop for filming</span><span class="switch" id="loopSw"></span></div>'+
+  '<div class="optrow"><span class="on-name" data-en="Dark mode" data-tr="Koyu mod">Dark mode</span><span class="switch" id="themeSw"></span></div>'+
+  '<div class="optrow"><span class="on-name" data-en="Language" data-tr="Dil">Language</span><button class="minibtn" id="langBtn">EN</button></div>'+
+  '<button class="resetbtn" id="resetBtn" data-en="Reset to start" data-tr="Başa dön">Reset to start</button></div>'; }
+var SETS={
+  tasks:[['task_added','Task Added','Görev Eklendi'],['task_done','Task Completed','Görev Tamam'],['task_priority','Priority Updated','Öncelik Güncellendi'],['task_list','Task List Ready','Görev Listesi']],
+  meeting:[['meet_sched','Meeting Scheduled','Toplantı Planlandı'],['meet_remind','Meeting Reminder','Toplantı Hatırlatıcısı'],['meet_video','Video Call Ready','Görüntülü Arama'],['meet_agenda','Agenda Ready','Gündem Hazır']],
+  message:[['msg_received','Message Received','Mesaj Alındı'],['msg_reply','Reply Drafted','Yanıt Taslağı'],['msg_update','Team Update','Ekip Güncellemesi'],['msg_notif','Notification','Bildirim']],
+  files:[['file_upload','File Uploaded','Dosya Yüklendi'],['file_sent','File Sent','Dosya Gönderildi'],['file_doc','Document Ready','Belge Hazır'],['file_sync','Sync Complete','Eşitleme Tamam']],
+  project:[['proj_updated','Project Updated','Proje Güncellendi'],['proj_complete','Progress Complete','İlerleme Tamam'],['proj_milestone','Milestone Reached','Kilometre Taşı'],['proj_report','Report Ready','Rapor Hazır']],
+  deadline:[['dead_remind','Deadline Reminder','Termin Hatırlatıcısı'],['dead_today','Due Today','Bugün Teslim'],['dead_priority','Priority Alert','Öncelik Uyarısı'],['dead_overdue','Task Overdue','Görev Gecikti']]
+};
+function buildPanel(){
+  var styles=[['minimal','Minimal','Minimal'],['corporate','Corporate','Kurumsal'],['remote','Remote','Uzaktan'],['creative','Creative','Kreatif'],['dark','Dark','Koyu'],['soft','Soft Office','Yumuşak']];
+  var grp=SETS[state.fmod]||SETS.tasks;
+  var sub='';
+  document.getElementById('panelBody').innerHTML=navHTML+
+    '<div class="sec"><div class="lbl" data-en="Scenario" data-tr="Senaryo">Scenario</div><div class="chips">'+grp.map(function(s){ return chip('tscenario',s[0],s[1],s[2]); }).join('')+'</div></div>'+
+    sub+
+    '<div class="sec"><div class="lbl" data-en="Visual style" data-tr="Görsel stil">Visual style</div><div class="chips">'+styles.map(function(s){ return chip('tstyle',s[0],s[1],s[2]); }).join('')+'</div></div>'+
+    optsHTML();
+  afterPanel();
+}
+function afterPanel(){ refreshChips(); applyLang(panel); var sw=document.getElementById('loopSw'); if(sw) sw.classList.toggle('on',state.loop);
+  var ts=document.getElementById('themeSw'); if(ts) ts.classList.toggle('on',document.body.classList.contains('dark'));
+  var lb=document.getElementById('langBtn'); if(lb) lb.textContent=lang.toUpperCase(); bindOpts(); }
+function setOn(group,val){ panel.querySelectorAll('[data-group="'+group+'"]').forEach(function(c){ c.classList.toggle('on',c.getAttribute('data-val')===val); }); }
+function refreshChips(){ setOn('tscenario',state.tscenario); setOn('tstyle',state.tstyle); }
+panel.addEventListener('click',function(e){
+  var g=e.target.closest('[data-group]'); if(g){ var grp=g.getAttribute('data-group'), v=g.getAttribute('data-val');
+    if(grp==='tscenario'){ state.tscenario=v; }
+    else if(grp==='tstyle'){ state.tstyle=v; applyStyle(); if(mode==='health') tRender('idle'); }
+    refreshChips(); return; }
+});
+function bindOpts(){
+  var mb=document.getElementById('menuBtn'); if(mb) mb.onclick=function(){ goHome(); };
+  var ls=document.getElementById('loopSw'); if(ls) ls.onclick=function(){ state.loop=!state.loop; this.classList.toggle('on',state.loop); };
+  var ts=document.getElementById('themeSw'); if(ts) ts.onclick=function(){ var d=!document.body.classList.contains('dark'); document.body.classList.toggle('dark',d); this.classList.toggle('on',d); };
+  var lb=document.getElementById('langBtn'); if(lb) lb.onclick=function(){ lang=(lang==='en'?'tr':'en'); document.documentElement.lang=lang; this.textContent=lang.toUpperCase(); applyLang(document); };
+  var rb=document.getElementById('resetBtn'); if(rb) rb.onclick=function(){ if(mode==='health') tRender('idle'); };
+}
+
+/* ===== home ===== */
+var sectors=[
+  {id:'tasks',en:'Tasks',tr:'Görevler',icon:'task',c:'#2156C9'},
+  {id:'meeting',en:'Meetings',tr:'Toplantılar',icon:'cal',c:'#0E9488'},
+  {id:'message',en:'Team Message',tr:'Ekip Mesajı',icon:'msg',c:'#7C3AED'},
+  {id:'files',en:'File Sharing',tr:'Dosya Paylaşımı',icon:'file',c:'#E0884A'},
+  {id:'project',en:'Project Progress',tr:'Proje İlerlemesi',icon:'chart',c:'#11936B'},
+  {id:'deadline',en:'Deadline Alert',tr:'Termin Uyarısı',icon:'alert',c:'#E0564B'}
+];
+var TMODS={ tasks:'task_done', meeting:'meet_sched', message:'msg_received', files:'file_upload', project:'proj_updated', deadline:'dead_remind' };
+function buildHome(){
+  var grid=sectors.map(function(s){ return '<button class="sector" data-sector="'+s.id+'">'+
+    '<div class="sicon" style="background:linear-gradient(135deg,'+s.c+', color-mix(in srgb,'+s.c+' 70%, #fff))">'+svgI(IC[s.icon]||'')+'</div>'+
+    '<div class="sname" data-en="'+s.en+'" data-tr="'+s.tr+'">'+s.en+'</div></button>'; }).join('');
+  home.innerHTML=status()+'<div class="body"><div style="padding:6px 0 18px"><span class="brandmark">WORK</span>'+
+    '<div class="h1" style="margin-top:14px" data-en="Choose a module" data-tr="Bir modül seç">Choose a module</div>'+
+    '<div class="muted" style="margin-top:4px" data-en="Open a screen to film" data-tr="Çekmek için bir ekran aç">Open a screen to film</div></div>'+
+    '<div class="home-grid">'+grid+'</div></div>';
+  applyLang(home);
+}
+home.addEventListener('click',function(e){ var s=e.target.closest('[data-sector]'); if(!s) return; goMod(s.getAttribute('data-sector')); });
+function goMod(id){ mode='health'; state.fmod=id; state.tscenario=TMODS[id]||'task_done'; home.classList.add('hidden'); stage.classList.remove('hidden'); buildPanel(); applyStyle(); closePanel(); tRender('idle'); }
+function goHome(){ mode='home'; stopAnims(); stage.classList.add('hidden'); home.classList.remove('hidden'); document.body.classList.remove('dark'); closePanel(); }
+
+/* init */
+buildHome();
+})();
+</script>
+</body>
+</html>
