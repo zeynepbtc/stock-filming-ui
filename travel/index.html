@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Travel App — Stock Filming Tool</title>
+<style>
+:root{
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --bg:#F2F3F6; --surface:#FFFFFF; --surface-2:#F6F7F9;
+  --text:#0E1116; --muted:#6A7280; --faint:#9AA1AC; --line:#E6E8EC;
+  --shadow:0 18px 50px -24px rgba(16,20,30,.30); --shadow-sm:0 6px 20px -12px rgba(16,20,30,.30);
+  --ok:#11936B; --ok-soft:#E6F5EE; --statusink:#0E1116;
+  --accent:#1E88E5; --accent-2:#56A8F0; --accent-soft:color-mix(in srgb,var(--accent) 13%,var(--surface));
+}
+.dark{
+  --bg:#0B0D11; --surface:#15191F; --surface-2:#1B2027;
+  --text:#F3F5F8; --muted:#9BA3AE; --faint:#6B7480; --line:#262C34;
+  --shadow:0 24px 60px -22px rgba(0,0,0,.7); --shadow-sm:0 8px 24px -14px rgba(0,0,0,.6);
+  --ok:#2FBE8C; --ok-soft:#11271F; --statusink:#F3F5F8;
+  --accent-soft:color-mix(in srgb,var(--accent) 22%,var(--surface));
+}
+*{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; -webkit-touch-callout:none;
+  -webkit-user-select:none; -moz-user-select:none; -ms-user-select:none; user-select:none; -webkit-user-drag:none; }
+html,body{ height:100%; margin:0; }
+body{ font-family:var(--font); background:var(--bg); color:var(--text); overflow:hidden; position:fixed; inset:0; transition:background .35s,color .35s; touch-action:manipulation; }
+#home,#stage{ position:absolute; inset:0; display:flex; flex-direction:column; background:var(--bg); }
+#stage{ cursor:pointer; }
+.hidden{ display:none !important; }
+.statusbar{ flex:0 0 auto; height:54px; padding:0 26px 8px; display:flex; align-items:flex-end; justify-content:space-between; color:var(--statusink); font-size:15px; font-weight:600; }
+.statusbar .sig{ display:flex; align-items:center; gap:7px; } .statusbar .stroke{ fill:var(--statusink); }
+.body{ flex:1; display:flex; flex-direction:column; padding:0 24px; }
+.center-col{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; }
+.eyebrow{ font-size:12.5px; font-weight:700; letter-spacing:.18em; text-transform:uppercase; color:var(--muted); }
+.paylabel{ font-size:30px; font-weight:800; letter-spacing:-.02em; line-height:1.12; }
+.h1{ font-size:30px; font-weight:800; letter-spacing:-.02em; line-height:1.1; }
+.brandmark{ font-size:15px; font-weight:800; letter-spacing:.30em; text-transform:uppercase; }
+.muted{ color:var(--muted); } .small{ font-size:13.5px; }
+.tap-hint{ animation:hintFade 1.8s ease-in-out infinite; } @keyframes hintFade{ 0%,100%{opacity:.5} 50%{opacity:1} }
+
+.disc{ width:150px; height:150px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin-bottom:24px; animation:pop .5s cubic-bezier(.2,.9,.3,1.3) both; }
+.disc svg{ width:64px; height:64px; }
+.disc.accent{ background:var(--accent-soft); color:var(--accent); }
+.disc.pulse{ animation:pop .5s both, discPulse 1.9s .45s ease-in-out infinite; }
+@keyframes discPulse{ 0%,100%{transform:scale(1)} 50%{transform:scale(1.05)} }
+@keyframes pop{ 0%{transform:scale(.45);opacity:0} 100%{transform:scale(1);opacity:1} }
+.spinner{ width:116px; height:116px; border-radius:50%; border:6px solid var(--line); border-top-color:var(--accent); animation:spin 1s linear infinite; margin-bottom:24px; }
+@keyframes spin{ to{ transform:rotate(360deg); } }
+
+/* success tick */
+.suc{ position:relative; width:150px; height:150px; display:flex; align-items:center; justify-content:center; margin-bottom:24px; }
+.suc .ripple{ position:absolute; inset:0; border-radius:50%; border:3px solid var(--accent); opacity:0; animation:ripple .85s .1s ease-out; }
+.suc .circle{ position:absolute; inset:0; border-radius:50%; background:var(--accent); animation:pop .42s cubic-bezier(.2,.9,.3,1.3) both; }
+.suc svg{ position:relative; z-index:2; width:78px; height:78px; }
+.suc .tick{ fill:none; stroke:#fff; stroke-width:3; stroke-linecap:round; stroke-linejoin:round; stroke-dasharray:80; stroke-dashoffset:80; animation:draw .5s .2s ease forwards; }
+@keyframes draw{ to{ stroke-dashoffset:0; } }
+@keyframes ripple{ 0%{transform:scale(.55);opacity:.55} 100%{transform:scale(1.7);opacity:0} }
+
+/* cards */
+.tcard{ width:90%; max-width:350px; background:var(--surface); border:1px solid var(--line); border-radius:20px; box-shadow:var(--shadow-sm); padding:20px; text-align:left; }
+.pop-in{ animation:cardIn .5s cubic-bezier(.2,.9,.3,1.2) both; } @keyframes cardIn{ 0%{opacity:0;transform:translateY(16px) scale(.97)} 100%{opacity:1;transform:none} }
+.trow{ display:flex; align-items:center; justify-content:space-between; padding:11px 0; border-bottom:1px solid var(--line); } .trow:last-child{ border-bottom:none; }
+.trow .ti{ display:flex; align-items:center; gap:11px; font-weight:650; font-size:15px; } .trow .ti svg{ width:20px; height:20px; color:var(--accent); }
+.trow .tv{ color:var(--muted); font-size:14px; font-weight:600; }
+.bigroute{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:6px; }
+.bigroute .pt{ font-size:22px; font-weight:800; } .bigroute .mid{ flex:1; display:flex; align-items:center; gap:6px; color:var(--accent); } .bigroute .mid .ln{ flex:1; height:2px; background:var(--accent); opacity:.5; border-radius:2px; } .bigroute .mid svg{ width:22px; height:22px; }
+.cap{ font-size:12.5px; color:var(--muted); font-weight:600; }
+.stars{ color:#E8A93B; letter-spacing:2px; font-size:16px; }
+.routebox{ width:90%; max-width:350px; }
+.routebox svg{ width:100%; height:170px; display:block; }
+.rpin{ fill:var(--accent); } .rpin.b{ fill:var(--accent-2); }
+.rline{ fill:none; stroke:var(--accent); stroke-width:3.5; stroke-linecap:round; }
+.rline.draw{ stroke-dasharray:360; stroke-dashoffset:360; transition:stroke-dashoffset 1.5s ease; }
+.rline.flow{ stroke-dasharray:7 9; animation:dashflow 1s linear infinite; } @keyframes dashflow{ to{ stroke-dashoffset:-32; } }
+.pass{ width:90%; max-width:350px; border-radius:22px; overflow:hidden; box-shadow:var(--shadow-sm); border:1px solid var(--line); background:var(--surface); }
+.pass .top{ background:linear-gradient(135deg,var(--accent),var(--accent-2)); color:#fff; padding:16px 20px; }
+.pass .top .ttl{ font-size:11px; letter-spacing:.2em; font-weight:700; opacity:.9; }
+.pass .codes{ display:flex; align-items:center; gap:12px; margin-top:8px; } .pass .codes .c{ font-size:28px; font-weight:800; } .pass .codes .ln{ flex:1; height:2px; background:rgba(255,255,255,.6); } .pass .codes svg{ width:22px; height:22px; }
+.pass .grid2{ display:flex; padding:16px 20px; gap:18px; align-items:center; }
+.pass .info{ flex:1; display:flex; flex-direction:column; gap:10px; }
+.pass .info .k{ font-size:11px; color:var(--muted); letter-spacing:.1em; text-transform:uppercase; font-weight:700; } .pass .info .v{ font-size:16px; font-weight:750; margin-top:1px; }
+.pass .info .hl .v{ color:var(--accent); }
+.qr{ width:96px; height:96px; display:grid; grid-template-columns:repeat(7,1fr); grid-auto-rows:1fr; gap:3px; flex:0 0 96px; }
+.qr i{ border-radius:2px; background:transparent; } .qr i.on{ background:var(--text); }
+.seatgrid{ display:grid; grid-template-columns:repeat(4,34px); gap:9px; justify-content:center; margin-bottom:20px; }
+.seatgrid i{ height:30px; border-radius:7px 7px 4px 4px; background:var(--surface-2); border:1.5px solid var(--line); }
+.seatgrid i.sel{ background:var(--accent); border-color:transparent; box-shadow:0 0 0 4px var(--accent-soft); }
+.wxbig{ font-size:46px; font-weight:800; }
+.convo{ display:flex; flex-direction:column; gap:12px; }
+.convo .ln{ padding:12px 14px; border-radius:14px; background:var(--surface-2); font-weight:600; font-size:16px; }
+.convo .ln.b{ background:var(--accent-soft); color:var(--accent); }
+.fx{ font-size:40px; font-weight:800; letter-spacing:-.02em; text-align:center; }
+
+/* home */
+.home-grid{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:13px; padding-bottom:84px; }
+.sector{ background:var(--surface); border:1px solid var(--line); border-radius:22px; padding:18px 8px 16px; text-align:center; cursor:pointer; position:relative; transition:transform .12s; }
+.sector:active{ transform:scale(.96); }
+.sector .sicon{ width:50px; height:50px; border-radius:15px; margin:0 auto 10px; display:flex; align-items:center; justify-content:center; color:#fff; }
+.sector .sicon svg{ width:24px; height:24px; }
+.sector .sname{ font-size:12.5px; font-weight:650; }
+
+/* handle + panel */
+#handle{ position:fixed; left:50%; bottom:0; transform:translateX(-50%); width:180px; height:54px; z-index:40; cursor:pointer; background:transparent; border:none; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding-top:7px; }
+#handle .bar{ width:56px; height:6px; border-radius:999px; background:var(--faint); opacity:.65; transition:opacity .2s,transform .2s; }
+#handle .chev{ margin-top:4px; color:var(--faint); opacity:.6; } #handle .chev svg{ width:18px; height:18px; display:block; }
+#handle:active .bar,#handle:active .chev{ opacity:1; } #handle:active .bar{ transform:scaleX(1.18); }
+#backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.45); opacity:0; visibility:hidden; transition:opacity .3s,visibility .3s; z-index:60; }
+#backdrop.open{ opacity:1; visibility:visible; }
+#panel{ position:fixed; left:0; right:0; bottom:0; max-height:88vh; background:var(--surface); border-radius:24px 24px 0 0; box-shadow:0 -22px 60px -20px rgba(0,0,0,.55); border-top:1px solid var(--line); transform:translateY(101%); transition:transform .34s cubic-bezier(.2,.7,.25,1); z-index:61; display:flex; flex-direction:column; }
+#panel.open{ transform:translateY(0); }
+.panel-head{ display:flex; align-items:center; justify-content:space-between; padding:16px 20px 12px; border-bottom:1px solid var(--line); position:relative; }
+.panel-head .grip{ position:absolute; left:50%; top:7px; transform:translateX(-50%); width:42px; height:5px; border-radius:999px; background:var(--line); }
+.panel-head .t{ font-size:17px; font-weight:750; } .panel-head .t span:last-child{ color:var(--muted); font-weight:500; font-size:13px; margin-left:8px; }
+.panel-head .x{ width:38px; height:38px; border-radius:50%; border:1px solid var(--line); background:var(--surface-2); color:var(--text); font-size:19px; cursor:pointer; }
+.panel-body{ overflow-y:auto; padding:18px 20px 26px; }
+.sec{ margin-bottom:20px; } .sec:last-child{ margin-bottom:0; }
+.sec .lbl{ font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); font-weight:700; margin-bottom:10px; }
+.chips{ display:flex; gap:8px; flex-wrap:wrap; }
+.chip{ display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:10px 15px; border-radius:13px; background:var(--surface-2); color:var(--text); font-size:14px; font-weight:600; border:1.5px solid var(--line); cursor:pointer; }
+.chip.on{ background:var(--accent); color:#fff; border-color:transparent; }
+.optrow{ display:flex; align-items:center; justify-content:space-between; padding:13px 0; border-bottom:1px solid var(--line); } .optrow:last-child{ border-bottom:none; }
+.optrow .on-name{ font-size:15px; font-weight:600; }
+.switch{ width:52px; height:31px; border-radius:999px; background:var(--line); position:relative; cursor:pointer; flex:0 0 auto; transition:background .2s; } .switch.on{ background:var(--accent); }
+.switch::after{ content:""; position:absolute; top:3px; left:3px; width:25px; height:25px; border-radius:50%; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.3); transition:left .2s; } .switch.on::after{ left:24px; }
+.minibtn{ padding:9px 16px; border-radius:11px; border:1.5px solid var(--line); background:var(--surface-2); color:var(--text); font-weight:650; font-size:14px; cursor:pointer; font-family:var(--font); }
+.resetbtn{ width:100%; padding:14px; border-radius:14px; border:none; background:var(--accent); color:#fff; font-weight:700; font-size:16px; cursor:pointer; font-family:var(--font); margin-top:6px; }
+.navbtn{ width:100%; display:flex; align-items:center; gap:10px; padding:14px 16px; border-radius:14px; border:1px solid var(--line); background:var(--surface-2); color:var(--text); font-weight:700; font-size:15px; cursor:pointer; font-family:var(--font); margin-bottom:18px; } .navbtn svg{ width:20px; height:20px; }
+</style>
+</head>
+<body>
+<div id="home"></div>
+<div id="stage" class="hidden"></div>
+<div id="handle" title="Open controls"><span class="bar"></span><span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg></span></div>
+<div id="backdrop"></div>
+<div id="panel">
+  <div class="panel-head"><span class="grip"></span>
+    <div class="t"><span data-en="Director controls" data-tr="Yönetmen paneli">Director controls</span><span data-en="backstage" data-tr="kulis">backstage</span></div>
+    <button class="x" id="closeBtn">×</button>
+  </div>
+  <div class="panel-body" id="panelBody"></div>
+</div>
+<script>
+(function(){
+var lang='en', mode='home', timer=null, tok=0;
+var reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+var state={ fmod:'flights', scene:'idle', tscenario:'found', tstyle:'modern', loop:false };
+
+function svgI(p,sw){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="'+(sw||2)+'" stroke-linecap="round" stroke-linejoin="round">'+p+'</svg>'; }
+var IC={
+  plane:'<path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/>',
+  hotel:'<path d="M4 21V5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v16"/><path d="M3 21h18M9 8h.01M13 8h.01M9 12h.01M13 12h.01M9 16h6"/>',
+  ticket:'<path d="M4 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v3a2 2 0 0 0 0 4v3a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-3a2 2 0 0 0 0-4z"/><path d="M14 5v14"/>',
+  doc:'<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/>',
+  pin:'<path d="M12 21s7-6 7-11a7 7 0 1 0-14 0c0 5 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/>',
+  nav:'<path d="M3 11l18-8-8 18-2-8z"/>',
+  arrow:'<path d="M5 12h14M13 6l6 6-6 6"/>',
+  search:'<circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/>',
+  sun:'<circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.4M12 19.1v2.4M4.2 4.2l1.7 1.7M18.1 18.1l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.2 19.8l1.7-1.7M18.1 5.9l1.7-1.7"/>',
+  globe:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/>',
+  coins:'<ellipse cx="9" cy="7" rx="6" ry="3"/><path d="M3 7v5c0 1.7 2.7 3 6 3M3 12c0 1.7 2.7 3 6 3"/><circle cx="16" cy="15" r="5"/>',
+  bell:'<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21h4"/>',
+  bag:'<rect x="5" y="7" width="14" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M5 12h14"/>',
+  bus:'<rect x="4" y="4" width="16" height="13" rx="2"/><path d="M4 11h16M7 20v-3M17 20v-3"/><circle cx="8" cy="14" r="1"/><circle cx="16" cy="14" r="1"/>',
+  car:'<path d="M5 16l1.5-5A2 2 0 0 1 8.4 9.6h7.2a2 2 0 0 1 1.9 1.4L19 16"/><rect x="3" y="16" width="18" height="4" rx="1.5"/><circle cx="7.5" cy="20" r="1"/><circle cx="16.5" cy="20" r="1"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3.5 2"/>',
+  compass:'<circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/>'
+};
+function status(){ return '<div class="statusbar"><span>9:24</span><span class="sig">'+
+  '<svg width="19" height="13" viewBox="0 0 19 13"><rect class="stroke" x="0" y="9" width="3" height="4" rx="1"/><rect class="stroke" x="5" y="6" width="3" height="7" rx="1"/><rect class="stroke" x="10" y="3" width="3" height="10" rx="1"/><rect class="stroke" x="15" y="0" width="3" height="13" rx="1"/></svg>'+
+  '<svg width="17" height="13" viewBox="0 0 17 13"><path class="stroke" d="M8.5 2.5c2.6 0 5 1 6.8 2.7l-1.4 1.5C12.5 5.4 10.6 4.6 8.5 4.6S4.5 5.4 3.1 6.7L1.7 5.2C3.5 3.5 5.9 2.5 8.5 2.5z"/></svg>'+
+  '<svg width="27" height="13" viewBox="0 0 27 13"><rect x="0" y="0" width="22" height="13" rx="3.5" fill="none" stroke-width="1.4" style="stroke:var(--statusink)"/><rect class="stroke" x="2" y="2" width="16" height="9" rx="1.8"/><rect class="stroke" x="23" y="4" width="2.2" height="5" rx="1"/></svg>'+
+  '</span></div>'; }
+function applyLang(scope){ scope.querySelectorAll('[data-en]').forEach(function(el){ var x=el.getAttribute('data-'+lang); if(x!==null) el.textContent=x; }); }
+var raf={a:null,b:null};
+function stopAnims(){ if(raf.a){cancelAnimationFrame(raf.a);raf.a=null;} if(raf.b){cancelAnimationFrame(raf.b);raf.b=null;} }
+function restart(el){ el.style.animation='none'; void el.offsetWidth; el.style.animation=''; }
+var stage=document.getElementById('stage'), home=document.getElementById('home');
+
+/* ===== styles + helpers ===== */
+var TSTYLE={ modern:{a:'#1E88E5',a2:'#56A8F0',dark:false}, premium:{a:'#0F766E',a2:'#22A89A',dark:false}, business:{a:'#2B3A66',a2:'#52639C',dark:false}, vacation:{a:'#F2674A',a2:'#FF9166',dark:false}, dark:{a:'#34D6C4',a2:'#5BE0FF',dark:true}, minimal:{a:'#3B4654',a2:'#6B7686',dark:false} };
+function tAccent(){ var S=TSTYLE[state.tstyle]; stage.style.setProperty('--accent',S.a); stage.style.setProperty('--accent-2',S.a2); }
+function applyStyle(){ var d=TSTYLE[state.tstyle].dark; document.body.classList.toggle('dark',d); var sw=document.getElementById('themeSw'); if(sw) sw.classList.toggle('on',d); }
+function qrHTML(){ var pat=['1111101','1000101','1011101','1010011','1011011','1000101','1111101']; var s=''; for(var r=0;r<7;r++){ for(var c=0;c<7;c++){ s+='<i class="'+(pat[r][c]==='1'?'on':'')+'"></i>'; } } return '<div class="qr">'+s+'</div>'; }
+function lbl(en,tr){ return '<p class="paylabel" style="margin-top:22px" data-en="'+en+'" data-tr="'+tr+'">'+en+'</p>'; }
+function tickDisc(){ return '<div class="suc"><span class="ripple"></span><span class="circle"></span><svg viewBox="0 0 24 24"><path class="tick" d="M5 13l4 4L19 7"/></svg></div>'; }
+function routeSVG(){ return '<svg viewBox="0 0 320 160"><path class="rline" d="M44 122 Q160 18 276 52"/><circle class="rpin" cx="44" cy="122" r="7"/><circle class="rpin b" cx="276" cy="52" r="7"/></svg>'; }
+
+/* ===== idle + step engine ===== */
+function tRender(name){ if(timer){clearTimeout(timer);timer=null;} stopAnims(); tok++; state.scene=name; tAccent();
+  var inner='<div class="center-col"><div class="disc accent pulse">'+svgI(IC.compass,1.9)+'</div>'+
+    '<p class="eyebrow" data-en="Ready" data-tr="Hazır">Ready</p>'+
+    '<p class="eyebrow tap-hint" style="margin-top:14px" data-en="Tap to continue" data-tr="Devam için dokun">Tap to continue</p></div>';
+  stage.innerHTML=status()+'<div class="body">'+inner+'</div>'; applyLang(stage); }
+
+function tStep(st){ stopAnims(); tok++; var my=tok; state.scene=st.final?'final':'play'; tAccent();
+  var t=st.type, inner='', label = st.en?lbl(st.en,st.tr):'';
+  if(t==='proc'){ inner='<div class="center-col"><div class="spinner"></div>'+lbl(st.en,st.tr)+(st.sub?'<p class="cap" style="margin-top:10px" data-en="'+st.sub+'" data-tr="'+(st.subtr||st.sub)+'">'+st.sub+'</p>':'')+'</div>'; }
+  else if(t==='check'){ inner='<div class="center-col">'+tickDisc()+lbl(st.en,st.tr)+(st.sub?'<p class="cap" style="margin-top:10px" data-en="'+st.sub+'" data-tr="'+(st.subtr||st.sub)+'">'+st.sub+'</p>':'')+'</div>'; }
+  else if(t==='flight'){ inner='<div class="center-col"><div class="tcard pop-in"><div class="bigroute"><span class="pt">'+st.from+'</span><span class="mid"><span class="ln"></span>'+svgI(IC.plane,1.9)+'<span class="ln"></span></span><span class="pt">'+st.to+'</span></div><div class="cap" data-en="'+st.fromN+' &middot; '+st.toN+'" data-tr="'+st.fromN+' &middot; '+st.toN+'">'+st.fromN+' &middot; '+st.toN+'</div><div class="trow"><span class="ti">'+svgI(IC.clock,1.8)+'<span data-en="Departure" data-tr="Kalkış">Departure</span></span><span class="tv">09:24</span></div><div class="trow"><span class="ti">'+svgI(IC.plane,1.8)+'<span data-en="Direct" data-tr="Direkt">Direct</span></span><span class="tv">2h 10m</span></div></div>'+label+'</div>'; }
+  else if(t==='hotel'){ inner='<div class="center-col"><div class="tcard pop-in"><div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">'+'<div class="disc accent" style="width:48px;height:48px;margin:0">'+svgI(IC.hotel,1.7)+'</div><div><div style="font-weight:800;font-size:18px">Lakeside Hotel</div><div class="stars">&#9733;&#9733;&#9733;&#9733;</div></div></div><div class="trow"><span class="ti">'+svgI(IC.pin,1.8)+'<span>Mountain Region</span></span><span class="tv" data-en="2.1 km" data-tr="2.1 km">2.1 km</span></div><div class="trow"><span class="ti">'+svgI(IC.hotel,1.8)+'<span data-en="Lake view room" data-tr="Göl manzaralı oda">Lake view room</span></span><span class="tv" data-en="Available" data-tr="Uygun">Available</span></div></div>'+label+'</div>'; }
+  else if(t==='pass'){ inner='<div class="center-col"><div class="pass pop-in"><div class="top"><div class="ttl" data-en="BOARDING PASS" data-tr="BİNİŞ KARTI">BOARDING PASS</div><div class="codes"><span class="c">NCY</span><span class="ln"></span>'+svgI(IC.plane,2)+'<span class="ln"></span><span class="c">SBY</span></div></div><div class="grid2"><div class="info"><div><div class="k" data-en="Passenger" data-tr="Yolcu">Passenger</div><div class="v">Traveler</div></div><div style="display:flex;gap:26px"><div><div class="k" data-en="Seat" data-tr="Koltuk">Seat</div><div class="v">12A</div></div><div class="hl"><div class="k" data-en="Gate" data-tr="Kapı">Gate</div><div class="v">East Gate</div></div></div></div>'+qrHTML()+'</div></div>'+label+'</div>'; }
+  else if(t==='gate'){ inner='<div class="center-col"><div class="tcard pop-in" style="text-align:center"><div class="k" style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:700" data-en="New gate" data-tr="Yeni kapı">New gate</div><div style="font-size:40px;font-weight:800;color:var(--accent);margin:6px 0">East Gate</div><div class="trow" style="justify-content:center;gap:30px"><span class="ti">'+svgI(IC.clock,1.8)+'<span data-en="Boarding" data-tr="Biniş">Boarding</span></span><span class="tv">09:24</span></div></div>'+label+'</div>'; }
+  else if(t==='seat'){ var cells=''; for(var i=0;i<12;i++) cells+='<i class="'+(i===5?'sel':'')+'"></i>'; inner='<div class="center-col"><div class="seatgrid">'+cells+'</div><div class="cap" style="margin-bottom:6px" data-en="Seat 12A &middot; Window" data-tr="Koltuk 12A &middot; Cam kenarı">Seat 12A &middot; Window</div>'+lbl(st.en,st.tr)+'</div>'; }
+  else if(t==='luggage'){ inner='<div class="center-col"><div class="disc accent">'+svgI(IC.bag,1.7)+'</div>'+lbl(st.en,st.tr)+'<p class="cap" style="margin-top:10px" data-en="1 checked bag &middot; 23 kg" data-tr="1 valiz &middot; 23 kg">1 checked bag &middot; 23 kg</p></div>'; }
+  else if(t==='route'){ inner='<div class="center-col"><div class="routebox pop-in">'+routeSVG()+'</div><div class="cap" style="margin-top:6px" data-en="North City &rarr; Sunset Bay" data-tr="North City &rarr; Sunset Bay">North City &rarr; Sunset Bay</div>'+lbl(st.en,st.tr)+'</div>'; }
+  else if(t==='transport'){ inner='<div class="center-col"><div class="tcard pop-in"><div class="trow"><span class="ti">'+svgI(IC.bus,1.7)+'<span data-en="Metro &middot; Central Terminal" data-tr="Metro &middot; Central Terminal">Metro &middot; Central Terminal</span></span><span class="tv">6 min</span></div><div class="trow"><span class="ti">'+svgI(IC.bus,1.7)+'<span data-en="Bus &middot; River Station" data-tr="Otobüs &middot; River Station">Bus &middot; River Station</span></span><span class="tv">11 min</span></div><div class="trow"><span class="ti">'+svgI(IC.car,1.7)+'<span data-en="Taxi &middot; Harbor District" data-tr="Taksi &middot; Harbor District">Taxi &middot; Harbor District</span></span><span class="tv">4 min</span></div></div>'+label+'</div>'; }
+  else if(t==='weather'){ inner='<div class="center-col"><div class="tcard pop-in" style="text-align:center"><div style="display:flex;align-items:center;justify-content:center;gap:14px"><div class="disc accent" style="width:64px;height:64px;margin:0">'+svgI(IC.sun,1.7)+'</div><div class="wxbig">24&deg;</div></div><div class="cap" style="margin-top:10px" data-en="North City &middot; Clear" data-tr="North City &middot; Açık">North City &middot; Clear</div><div class="trow" style="justify-content:center;margin-top:8px"><span class="ti" style="color:var(--accent)">'+svgI(IC.bell,1.7)+'<span data-en="Wind advisory" data-tr="Rüzgar uyarısı">Wind advisory</span></span></div></div>'+label+'</div>'; }
+  else if(t==='translate'){ inner='<div class="center-col"><div class="tcard pop-in"><div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;color:var(--accent);font-weight:700">'+svgI(IC.globe,1.8)+'<span data-en="Translation" data-tr="Çeviri">Translation</span></div><div class="convo"><div class="ln" data-en="Good morning" data-tr="Good morning">Good morning</div><div class="ln b" data-en="Günaydın" data-tr="Günaydın">Günaydın</div></div></div>'+label+'</div>'; }
+  else if(t==='currency'){ inner='<div class="center-col"><div class="tcard pop-in" style="text-align:center"><div class="fx">$100</div><div style="color:var(--accent);margin:8px 0">'+svgI(IC.arrow,2)+'</div><div class="fx" style="color:var(--accent)">&euro;92</div><div class="cap" style="margin-top:12px" data-en="Rate 0.92" data-tr="Kur 0.92">Rate 0.92</div></div>'+label+'</div>'; }
+  else if(t==='reminder'){ inner='<div class="center-col"><div class="disc accent">'+svgI(IC.bell,1.7)+'</div>'+lbl(st.en,st.tr)+'<div class="tcard pop-in" style="margin-top:18px"><div class="trow"><span class="ti">'+svgI(IC.clock,1.7)+'<span data-en="Trip reminder" data-tr="Seyahat hatırlatıcısı">Trip reminder</span></span><span class="tv" data-en="Tomorrow 09:00" data-tr="Yarın 09:00">Tomorrow 09:00</span></div></div></div>'; }
+  stage.innerHTML=status()+'<div class="body">'+inner+'</div>';
+  stage.querySelectorAll('.disc,.suc,.suc *').forEach(restart); applyLang(stage);
+  if(t==='route'){ var ln=stage.querySelector('.rline'); if(ln){ if(st.flow){ ln.classList.add('flow'); } else { ln.classList.add('draw'); if(!reduce) requestAnimationFrame(function(){ ln.style.strokeDashoffset='0'; }); else ln.style.strokeDashoffset='0'; } } }
+}
+
+var FLOW=(function(){
+  function P(en,tr,dur,sub){ return {type:'proc',en:en,tr:tr,dur:dur||1300,sub:sub}; }
+  return {
+    /* Flights */
+    f_search:[ P('Connecting','Bağlanıyor',900), {type:'proc',en:'Searching Flights',tr:'Uçuşlar Aranıyor',final:true} ],
+    f_found:[ P('Searching flights','Uçuşlar aranıyor',1500), {type:'flight',from:'NCY',to:'SBY',fromN:'North City',toN:'Sunset Bay',en:'Flight Found',tr:'Uçuş Bulundu',final:true} ],
+    f_booked:[ P('Booking','Rezervasyon yapılıyor',1500), {type:'check',en:'Booking Confirmed',tr:'Rezervasyon Onaylandı',sub:'North City &rarr; Sunset Bay',final:true} ],
+    f_updated:[ P('Updating','Güncelleniyor',1200), {type:'flight',from:'NCY',to:'SBY',fromN:'North City',toN:'Sunset Bay',en:'Flight Updated',tr:'Uçuş Güncellendi',final:true} ],
+    /* Hotels */
+    h_search:[ P('Connecting','Bağlanıyor',900), {type:'proc',en:'Searching Hotels',tr:'Oteller Aranıyor',final:true} ],
+    h_found:[ P('Searching hotels','Oteller aranıyor',1500), {type:'hotel',en:'Hotel Found',tr:'Otel Bulundu',final:true} ],
+    h_reserved:[ P('Reserving','Rezerve ediliyor',1500), {type:'check',en:'Reservation Confirmed',tr:'Rezervasyon Onaylandı',sub:'Lakeside Hotel',final:true} ],
+    h_room:[ P('Checking availability','Uygunluk kontrol ediliyor',1300), {type:'hotel',en:'Room Available',tr:'Oda Uygun',final:true} ],
+    /* Boarding pass */
+    b_retrieve:[ P('Connecting','Bağlanıyor',900), {type:'proc',en:'Retrieving Ticket','tr':'Bilet Getiriliyor',final:true} ],
+    b_ready:[ P('Retrieving ticket','Bilet getiriliyor',1500), {type:'pass',en:'Boarding Pass Ready',tr:'Biniş Kartı Hazır',final:true} ],
+    b_gate:[ P('Updating gate','Kapı güncelleniyor',1200), {type:'gate',en:'Gate Updated',tr:'Kapı Güncellendi',final:true} ],
+    b_seat:[ P('Assigning seat','Koltuk atanıyor',1300), {type:'seat',en:'Seat Assigned',tr:'Koltuk Atandı',final:true} ],
+    /* Mobile check-in */
+    c_verify:[ P('Connecting','Bağlanıyor',900), {type:'proc',en:'Verifying Details',tr:'Bilgiler Doğrulanıyor',final:true} ],
+    c_done:[ P('Verifying details','Bilgiler doğrulanıyor',1500), {type:'check',en:'Check-in Complete',tr:'Check-in Tamamlandı',final:true} ],
+    c_doc:[ P('Verifying document','Belge doğrulanıyor',1600), {type:'check',en:'Travel Document Verified',tr:'Seyahat Belgesi Doğrulandı',final:true} ],
+    c_lug:[ P('Adding luggage','Bagaj ekleniyor',1300), {type:'luggage',en:'Luggage Added',tr:'Bagaj Eklendi',final:true} ],
+    /* Route / Navigation */
+    r_calc:[ P('Locating','Konum alınıyor',900), {type:'route',flow:true,en:'Calculating Route',tr:'Rota Hesaplanıyor',final:true} ],
+    r_found:[ {type:'route',flow:true,en:'Calculating route',tr:'Rota hesaplanıyor',dur:1500}, {type:'route',en:'Route Found',tr:'Rota Bulundu',final:true} ],
+    r_nav:[ P('Preparing','Hazırlanıyor',1200), {type:'route',en:'Navigation Ready',tr:'Navigasyon Hazır',final:true} ],
+    r_transport:[ P('Checking transport','Ulaşım kontrol ediliyor',1300), {type:'transport',en:'Transport Available',tr:'Ulaşım Mevcut',final:true} ],
+    /* Travel tools */
+    t_weather:[ P('Checking weather','Hava durumu kontrol ediliyor',1200), {type:'weather',en:'Weather Alert Ready',tr:'Hava Uyarısı Hazır',final:true} ],
+    t_translate:[ P('Translating','Çevriliyor',1200), {type:'translate',en:'Translation Ready',tr:'Çeviri Hazır',final:true} ],
+    t_currency:[ P('Converting','Dönüştürülüyor',1200), {type:'currency',en:'Currency Converted',tr:'Döviz Dönüştürüldü',final:true} ],
+    t_reminder:[ P('Creating reminder','Hatırlatıcı oluşturuluyor',1100), {type:'reminder',en:'Reminder Created',tr:'Hatırlatıcı Oluşturuldu',final:true} ]
+  };
+})();
+
+function tPlay(){ var steps=FLOW[state.tscenario]||FLOW.f_found; var i=0;
+  function go(){ var st=steps[i]; tStep(st); var my=tok; i++;
+    if(i<steps.length){ timer=setTimeout(function(){ if(my===tok) go(); }, st.dur||1300); }
+    else if(state.loop){ timer=setTimeout(function(){ if(my===tok) tRender('idle'); }, 3600); } }
+  go(); }
+
+/* ===== stage interactions ===== */
+function stageTap(){ if(mode!=='travel') return; if(state.scene==='idle') tPlay(); else if(state.scene==='final') tRender('idle'); }
+stage.addEventListener('click', stageTap);
+document.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+document.addEventListener('selectstart', function(e){ e.preventDefault(); });
+document.addEventListener('dragstart', function(e){ e.preventDefault(); });
+
+/* ===== panel ===== */
+var panel=document.getElementById('panel'), backdrop=document.getElementById('backdrop'), handle=document.getElementById('handle');
+function openPanel(){ panel.classList.add('open'); backdrop.classList.add('open'); }
+function closePanel(){ panel.classList.remove('open'); backdrop.classList.remove('open'); }
+handle.onclick=openPanel; backdrop.onclick=closePanel; document.getElementById('closeBtn').onclick=closePanel;
+function chip(group,val,en,tr){ return '<span class="chip" data-group="'+group+'" data-val="'+val+'" data-en="'+en+'" data-tr="'+tr+'">'+en+'</span>'; }
+var navHTML='<button class="navbtn" id="menuBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg><span data-en="Main menu" data-tr="Ana menü">Main menu</span></button>';
+function optsHTML(){ return '<div class="sec"><div class="lbl" data-en="Filming options" data-tr="Çekim seçenekleri">Filming options</div>'+
+  '<div class="optrow"><span class="on-name" data-en="Loop for filming" data-tr="Çekim için döngü">Loop for filming</span><span class="switch" id="loopSw"></span></div>'+
+  '<div class="optrow"><span class="on-name" data-en="Dark mode" data-tr="Koyu mod">Dark mode</span><span class="switch" id="themeSw"></span></div>'+
+  '<div class="optrow"><span class="on-name" data-en="Language" data-tr="Dil">Language</span><button class="minibtn" id="langBtn">EN</button></div>'+
+  '<button class="resetbtn" id="resetBtn" data-en="Reset to start" data-tr="Başa dön">Reset to start</button></div>'; }
+var SETS={
+  flights:[['f_search','Searching Flights','Uçuş Aranıyor'],['f_found','Flight Found','Uçuş Bulundu'],['f_booked','Booking Confirmed','Rezervasyon Onaylandı'],['f_updated','Flight Updated','Uçuş Güncellendi']],
+  hotels:[['h_search','Searching Hotels','Otel Aranıyor'],['h_found','Hotel Found','Otel Bulundu'],['h_reserved','Reservation Confirmed','Rezervasyon Onaylandı'],['h_room','Room Available','Oda Uygun']],
+  boarding:[['b_retrieve','Retrieving Ticket','Bilet Getiriliyor'],['b_ready','Boarding Pass Ready','Biniş Kartı Hazır'],['b_gate','Gate Updated','Kapı Güncellendi'],['b_seat','Seat Assigned','Koltuk Atandı']],
+  checkin:[['c_verify','Verifying Details','Bilgi Doğrulama'],['c_done','Check-in Complete','Check-in Tamam'],['c_doc','Document Verified','Belge Doğrulandı'],['c_lug','Luggage Added','Bagaj Eklendi']],
+  route:[['r_calc','Calculating Route','Rota Hesaplanıyor'],['r_found','Route Found','Rota Bulundu'],['r_nav','Navigation Ready','Navigasyon Hazır'],['r_transport','Transport Available','Ulaşım Mevcut']],
+  tools:[['t_weather','Weather Alert','Hava Uyarısı'],['t_translate','Translation','Çeviri'],['t_currency','Currency','Döviz'],['t_reminder','Reminder','Hatırlatıcı']]
+};
+function buildPanel(){
+  var styles=[['modern','Modern','Modern'],['premium','Premium','Premium'],['business','Business','İş'],['vacation','Vacation','Tatil'],['dark','Dark','Koyu'],['minimal','Minimal','Minimal']];
+  var grp=SETS[state.fmod]||SETS.flights;
+  document.getElementById('panelBody').innerHTML=navHTML+
+    '<div class="sec"><div class="lbl" data-en="Scenario" data-tr="Senaryo">Scenario</div><div class="chips">'+grp.map(function(s){ return chip('tscenario',s[0],s[1],s[2]); }).join('')+'</div></div>'+
+    '<div class="sec"><div class="lbl" data-en="Visual style" data-tr="Görsel stil">Visual style</div><div class="chips">'+styles.map(function(s){ return chip('tstyle',s[0],s[1],s[2]); }).join('')+'</div></div>'+
+    optsHTML();
+  afterPanel();
+}
+function afterPanel(){ refreshChips(); applyLang(panel); var sw=document.getElementById('loopSw'); if(sw) sw.classList.toggle('on',state.loop);
+  var ts=document.getElementById('themeSw'); if(ts) ts.classList.toggle('on',document.body.classList.contains('dark'));
+  var lb=document.getElementById('langBtn'); if(lb) lb.textContent=lang.toUpperCase(); bindOpts(); }
+function setOn(group,val){ panel.querySelectorAll('[data-group="'+group+'"]').forEach(function(c){ c.classList.toggle('on',c.getAttribute('data-val')===val); }); }
+function refreshChips(){ setOn('tscenario',state.tscenario); setOn('tstyle',state.tstyle); }
+panel.addEventListener('click',function(e){
+  var g=e.target.closest('[data-group]'); if(g){ var grp=g.getAttribute('data-group'), v=g.getAttribute('data-val');
+    if(grp==='tscenario'){ state.tscenario=v; }
+    else if(grp==='tstyle'){ state.tstyle=v; applyStyle(); if(mode==='travel') tRender('idle'); }
+    refreshChips(); return; }
+});
+function bindOpts(){
+  var mb=document.getElementById('menuBtn'); if(mb) mb.onclick=function(){ goHome(); };
+  var ls=document.getElementById('loopSw'); if(ls) ls.onclick=function(){ state.loop=!state.loop; this.classList.toggle('on',state.loop); };
+  var ts=document.getElementById('themeSw'); if(ts) ts.onclick=function(){ var d=!document.body.classList.contains('dark'); document.body.classList.toggle('dark',d); this.classList.toggle('on',d); };
+  var lb=document.getElementById('langBtn'); if(lb) lb.onclick=function(){ lang=(lang==='en'?'tr':'en'); document.documentElement.lang=lang; this.textContent=lang.toUpperCase(); applyLang(document); };
+  var rb=document.getElementById('resetBtn'); if(rb) rb.onclick=function(){ if(mode==='travel') tRender('idle'); };
+}
+
+/* ===== home ===== */
+var sectors=[
+  {id:'flights',en:'Flights',tr:'Uçuşlar',icon:'plane',c:'#1E88E5'},
+  {id:'hotels',en:'Hotels',tr:'Oteller',icon:'hotel',c:'#0F766E'},
+  {id:'boarding',en:'Boarding Pass',tr:'Biniş Kartı',icon:'ticket',c:'#6C4BE6'},
+  {id:'checkin',en:'Mobile Check-in',tr:'Mobil Check-in',icon:'doc',c:'#2B3A66'},
+  {id:'route',en:'Route',tr:'Rota',icon:'nav',c:'#F2674A'},
+  {id:'tools',en:'Travel Tools',tr:'Seyahat Araçları',icon:'compass',c:'#0E7C82'}
+];
+var TMODS={ flights:'f_found', hotels:'h_found', boarding:'b_ready', checkin:'c_done', route:'r_found', tools:'t_weather' };
+function buildHome(){
+  var grid=sectors.map(function(s){ return '<button class="sector" data-sector="'+s.id+'">'+
+    '<div class="sicon" style="background:linear-gradient(135deg,'+s.c+', color-mix(in srgb,'+s.c+' 70%, #fff))">'+svgI(IC[s.icon]||'')+'</div>'+
+    '<div class="sname" data-en="'+s.en+'" data-tr="'+s.tr+'">'+s.en+'</div></button>'; }).join('');
+  home.innerHTML=status()+'<div class="body"><div style="padding:6px 0 18px"><span class="brandmark">TRAVEL</span>'+
+    '<div class="h1" style="margin-top:14px" data-en="Choose a module" data-tr="Bir modül seç">Choose a module</div>'+
+    '<div class="muted" style="margin-top:4px" data-en="Open a screen to film" data-tr="Çekmek için bir ekran aç">Open a screen to film</div></div>'+
+    '<div class="home-grid">'+grid+'</div></div>';
+  applyLang(home);
+}
+home.addEventListener('click',function(e){ var s=e.target.closest('[data-sector]'); if(!s) return; goMod(s.getAttribute('data-sector')); });
+function goMod(id){ mode='travel'; state.fmod=id; state.tscenario=TMODS[id]||'f_found'; home.classList.add('hidden'); stage.classList.remove('hidden'); buildPanel(); applyStyle(); closePanel(); tRender('idle'); }
+function goHome(){ mode='home'; stopAnims(); stage.classList.add('hidden'); home.classList.remove('hidden'); document.body.classList.remove('dark'); closePanel(); }
+
+/* init */
+buildHome();
+})();
+</script>
+</body>
+</html>
