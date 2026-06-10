@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Fitness / Wellness App — Stock Filming Tool</title>
+<style>
+:root{
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --bg:#F2F3F6; --surface:#FFFFFF; --surface-2:#F6F7F9;
+  --text:#0E1116; --muted:#6A7280; --faint:#9AA1AC; --line:#E6E8EC;
+  --shadow:0 18px 50px -24px rgba(16,20,30,.30); --shadow-sm:0 6px 20px -12px rgba(16,20,30,.30);
+  --ok:#11936B; --ok-soft:#E6F5EE; --statusink:#0E1116;
+  --accent:#1F2937; --accent-2:#4B5563; --accent-soft:color-mix(in srgb,var(--accent) 13%,var(--surface));
+}
+.dark{
+  --bg:#0B0D11; --surface:#15191F; --surface-2:#1B2027;
+  --text:#F3F5F8; --muted:#9BA3AE; --faint:#6B7480; --line:#262C34;
+  --shadow:0 24px 60px -22px rgba(0,0,0,.7); --shadow-sm:0 8px 24px -14px rgba(0,0,0,.6);
+  --ok:#2FBE8C; --ok-soft:#11271F; --statusink:#F3F5F8;
+  --accent-soft:color-mix(in srgb,var(--accent) 22%,var(--surface));
+}
+*{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; -webkit-touch-callout:none;
+  -webkit-user-select:none; -moz-user-select:none; -ms-user-select:none; user-select:none; -webkit-user-drag:none; }
+html,body{ height:100%; margin:0; }
+body{ font-family:var(--font); background:var(--bg); color:var(--text); overflow:hidden; position:fixed; inset:0; transition:background .35s,color .35s; touch-action:manipulation; }
+#home,#stage{ position:absolute; inset:0; display:flex; flex-direction:column; background:var(--bg); }
+#stage{ cursor:pointer; }
+.hidden{ display:none !important; }
+.statusbar{ flex:0 0 auto; height:54px; padding:0 26px 8px; display:flex; align-items:flex-end; justify-content:space-between; color:var(--statusink); font-size:15px; font-weight:600; }
+.statusbar .sig{ display:flex; align-items:center; gap:7px; } .statusbar .stroke{ fill:var(--statusink); }
+.body{ flex:1; display:flex; flex-direction:column; padding:0 24px; }
+.center-col{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; }
+.eyebrow{ font-size:12.5px; font-weight:700; letter-spacing:.18em; text-transform:uppercase; color:var(--muted); }
+.paylabel{ font-size:30px; font-weight:800; letter-spacing:-.02em; line-height:1.12; }
+.h1{ font-size:30px; font-weight:800; letter-spacing:-.02em; line-height:1.1; }
+.brandmark{ font-size:15px; font-weight:800; letter-spacing:.30em; text-transform:uppercase; }
+.muted{ color:var(--muted); } .small{ font-size:13.5px; }
+.tap-hint{ animation:hintFade 1.8s ease-in-out infinite; } @keyframes hintFade{ 0%,100%{opacity:.5} 50%{opacity:1} }
+
+.disc{ width:150px; height:150px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin-bottom:24px; animation:pop .5s cubic-bezier(.2,.9,.3,1.3) both; }
+.disc svg{ width:64px; height:64px; }
+.disc.accent{ background:var(--accent-soft); color:var(--accent); }
+.disc.pulse{ animation:pop .5s both, discPulse 1.9s .45s ease-in-out infinite; }
+@keyframes discPulse{ 0%,100%{transform:scale(1)} 50%{transform:scale(1.05)} }
+@keyframes pop{ 0%{transform:scale(.45);opacity:0} 100%{transform:scale(1);opacity:1} }
+.spinner{ width:116px; height:116px; border-radius:50%; border:6px solid var(--line); border-top-color:var(--accent); animation:spin 1s linear infinite; margin-bottom:24px; }
+@keyframes spin{ to{ transform:rotate(360deg); } }
+
+/* success tick */
+.suc{ position:relative; width:150px; height:150px; display:flex; align-items:center; justify-content:center; margin-bottom:24px; }
+.suc .ripple{ position:absolute; inset:0; border-radius:50%; border:3px solid var(--accent); opacity:0; animation:ripple .85s .1s ease-out; }
+.suc .circle{ position:absolute; inset:0; border-radius:50%; background:var(--accent); animation:pop .42s cubic-bezier(.2,.9,.3,1.3) both; }
+.suc svg{ position:relative; z-index:2; width:78px; height:78px; }
+.suc .tick{ fill:none; stroke:#fff; stroke-width:3; stroke-linecap:round; stroke-linejoin:round; stroke-dasharray:80; stroke-dashoffset:80; animation:draw .5s .2s ease forwards; }
+@keyframes draw{ to{ stroke-dashoffset:0; } }
+@keyframes ripple{ 0%{transform:scale(.55);opacity:.55} 100%{transform:scale(1.7);opacity:0} }
+
+/* cards */
+.tcard{ width:90%; max-width:350px; background:var(--surface); border:1px solid var(--line); border-radius:20px; box-shadow:var(--shadow-sm); padding:20px; text-align:left; }
+.pop-in{ animation:cardIn .5s cubic-bezier(.2,.9,.3,1.2) both; } @keyframes cardIn{ 0%{opacity:0;transform:translateY(16px) scale(.97)} 100%{opacity:1;transform:none} }
+.trow{ display:flex; align-items:center; justify-content:space-between; padding:11px 0; border-bottom:1px solid var(--line); } .trow:last-child{ border-bottom:none; }
+.trow .ti{ display:flex; align-items:center; gap:11px; font-weight:650; font-size:15px; } .trow .ti svg{ width:20px; height:20px; color:var(--accent); }
+.trow .tv{ color:var(--muted); font-size:14px; font-weight:600; }
+.cap{ font-size:12.5px; color:var(--muted); font-weight:600; text-align:center; }
+.fx{ font-size:44px; font-weight:800; letter-spacing:-.02em; text-align:center; }
+.unit{ font-size:17px; color:var(--muted); font-weight:600; }
+.ringwrap{ position:relative; width:188px; height:188px; margin-bottom:10px; }
+.ringwrap svg{ width:188px; height:188px; transform:rotate(-90deg); }
+.ring-track{ fill:none; stroke:var(--line); stroke-width:14; }
+.ring-prog{ fill:none; stroke:var(--accent); stroke-width:14; stroke-linecap:round; transition:stroke-dashoffset 1.4s cubic-bezier(.2,.7,.2,1); }
+.ring-center{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+.ring-center .big{ font-size:36px; font-weight:800; letter-spacing:-.02em; } .ring-center .sub{ font-size:12px; color:var(--muted); font-weight:700; letter-spacing:.1em; text-transform:uppercase; }
+.breathe{ position:relative; width:210px; height:210px; display:flex; align-items:center; justify-content:center; margin-bottom:10px; }
+.breathe .core{ width:120px; height:120px; border-radius:50%; background:radial-gradient(circle at 35% 30%, color-mix(in srgb,var(--accent-2) 92%,#fff), var(--accent)); animation:breath 7s ease-in-out infinite; box-shadow:0 14px 44px -10px color-mix(in srgb,var(--accent) 70%,transparent); }
+.breathe .bring{ position:absolute; width:120px; height:120px; border-radius:50%; border:2px solid color-mix(in srgb,var(--accent) 42%,transparent); animation:breath 7s ease-in-out infinite; }
+.breathe .bring.b2{ width:120px; height:120px; border-color:color-mix(in srgb,var(--accent) 22%,transparent); animation-delay:.4s; }
+@keyframes breath{ 0%,100%{ transform:scale(.6) } 42%{ transform:scale(1.2) } 58%{ transform:scale(1.2) } }
+.glasses{ display:flex; gap:10px; flex-wrap:wrap; justify-content:center; max-width:300px; margin-bottom:10px; }
+.glass{ width:28px; height:38px; border-radius:5px 5px 9px 9px; border:2px solid var(--accent); position:relative; overflow:hidden; }
+.glass::after{ content:""; position:absolute; left:0; right:0; bottom:0; height:0; background:var(--accent); opacity:.5; transition:height .5s ease; }
+.glass.f::after{ height:100%; }
+.clist{ width:90%; max-width:350px; background:var(--surface); border:1px solid var(--line); border-radius:20px; box-shadow:var(--shadow-sm); padding:6px 20px; text-align:left; }
+.crow{ display:flex; align-items:center; gap:14px; padding:16px 0; border-bottom:1px solid var(--line); } .crow:last-child{ border-bottom:none; }
+.cbox{ width:28px; height:28px; border-radius:9px; border:2px solid var(--line); flex:0 0 28px; display:flex; align-items:center; justify-content:center; color:#fff; transition:background .3s,border-color .3s; }
+.cbox svg{ width:16px; height:16px; } .cbox .ck{ stroke-dasharray:30; stroke-dashoffset:30; }
+.crow.done .cbox{ background:var(--accent); border-color:transparent; } .crow.done .cbox .ck{ animation:draw .4s forwards; }
+.crow .ctext{ font-size:16px; font-weight:600; flex:1; transition:color .3s; } .crow.done .ctext{ color:var(--text); }
+.blinkcolon{ animation:blinkc 1s step-end infinite; } @keyframes blinkc{ 50%{opacity:.25} }
+.hrline{ width:100%; max-width:300px; height:64px; display:block; margin-top:6px; }
+.hrpath{ fill:none; stroke:var(--accent); stroke-width:3; stroke-linecap:round; stroke-linejoin:round; stroke-dasharray:620; stroke-dashoffset:620; animation:hrdraw 1.7s linear infinite; } @keyframes hrdraw{ to{ stroke-dashoffset:0; } }
+.heartbeat{ animation:hb 1s ease-in-out infinite; } @keyframes hb{ 0%,100%{transform:scale(1)} 16%{transform:scale(1.17)} 30%{transform:scale(1)} 44%{transform:scale(1.1)} 60%{transform:scale(1)} }
+.sleepbars{ display:flex; align-items:flex-end; gap:8px; height:96px; width:84%; max-width:300px; margin-bottom:6px; }
+.sleepbars i{ flex:1; background:var(--accent); border-radius:5px 5px 2px 2px; height:0; transition:height .8s cubic-bezier(.2,.7,.2,1); opacity:.85; }
+.zonepill{ display:inline-block; margin-top:12px; padding:7px 16px; border-radius:999px; font-size:13.5px; font-weight:750; letter-spacing:.02em; }
+
+/* home */
+.home-grid{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:13px; padding-bottom:84px; }
+.sector{ background:var(--surface); border:1px solid var(--line); border-radius:22px; padding:18px 8px 16px; text-align:center; cursor:pointer; position:relative; transition:transform .12s; }
+.sector:active{ transform:scale(.96); }
+.sector .sicon{ width:50px; height:50px; border-radius:15px; margin:0 auto 10px; display:flex; align-items:center; justify-content:center; color:#fff; }
+.sector .sicon svg{ width:24px; height:24px; }
+.sector .sname{ font-size:12.5px; font-weight:650; }
+
+/* handle + panel */
+#handle{ position:fixed; left:50%; bottom:0; transform:translateX(-50%); width:180px; height:54px; z-index:40; cursor:pointer; background:transparent; border:none; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding-top:7px; }
+#handle .bar{ width:56px; height:6px; border-radius:999px; background:var(--faint); opacity:.65; transition:opacity .2s,transform .2s; }
+#handle .chev{ margin-top:4px; color:var(--faint); opacity:.6; } #handle .chev svg{ width:18px; height:18px; display:block; }
+#handle:active .bar,#handle:active .chev{ opacity:1; } #handle:active .bar{ transform:scaleX(1.18); }
+#backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.45); opacity:0; visibility:hidden; transition:opacity .3s,visibility .3s; z-index:60; }
+#backdrop.open{ opacity:1; visibility:visible; }
+#panel{ position:fixed; left:0; right:0; bottom:0; max-height:88vh; background:var(--surface); border-radius:24px 24px 0 0; box-shadow:0 -22px 60px -20px rgba(0,0,0,.55); border-top:1px solid var(--line); transform:translateY(101%); transition:transform .34s cubic-bezier(.2,.7,.25,1); z-index:61; display:flex; flex-direction:column; }
+#panel.open{ transform:translateY(0); }
+.panel-head{ display:flex; align-items:center; justify-content:space-between; padding:16px 20px 12px; border-bottom:1px solid var(--line); position:relative; }
+.panel-head .grip{ position:absolute; left:50%; top:7px; transform:translateX(-50%); width:42px; height:5px; border-radius:999px; background:var(--line); }
+.panel-head .t{ font-size:17px; font-weight:750; } .panel-head .t span:last-child{ color:var(--muted); font-weight:500; font-size:13px; margin-left:8px; }
+.panel-head .x{ width:38px; height:38px; border-radius:50%; border:1px solid var(--line); background:var(--surface-2); color:var(--text); font-size:19px; cursor:pointer; }
+.panel-body{ overflow-y:auto; padding:18px 20px 26px; }
+.sec{ margin-bottom:20px; } .sec:last-child{ margin-bottom:0; }
+.sec .lbl{ font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); font-weight:700; margin-bottom:10px; }
+.chips{ display:flex; gap:8px; flex-wrap:wrap; }
+.chip{ display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:10px 15px; border-radius:13px; background:var(--surface-2); color:var(--text); font-size:14px; font-weight:600; border:1.5px solid var(--line); cursor:pointer; }
+.chip.on{ background:var(--accent); color:#fff; border-color:transparent; }
+.optrow{ display:flex; align-items:center; justify-content:space-between; padding:13px 0; border-bottom:1px solid var(--line); } .optrow:last-child{ border-bottom:none; }
+.optrow .on-name{ font-size:15px; font-weight:600; }
+.switch{ width:52px; height:31px; border-radius:999px; background:var(--line); position:relative; cursor:pointer; flex:0 0 auto; transition:background .2s; } .switch.on{ background:var(--accent); }
+.switch::after{ content:""; position:absolute; top:3px; left:3px; width:25px; height:25px; border-radius:50%; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.3); transition:left .2s; } .switch.on::after{ left:24px; }
+.minibtn{ padding:9px 16px; border-radius:11px; border:1.5px solid var(--line); background:var(--surface-2); color:var(--text); font-weight:650; font-size:14px; cursor:pointer; font-family:var(--font); }
+.resetbtn{ width:100%; padding:14px; border-radius:14px; border:none; background:var(--accent); color:#fff; font-weight:700; font-size:16px; cursor:pointer; font-family:var(--font); margin-top:6px; }
+.navbtn{ width:100%; display:flex; align-items:center; gap:10px; padding:14px 16px; border-radius:14px; border:1px solid var(--line); background:var(--surface-2); color:var(--text); font-weight:700; font-size:15px; cursor:pointer; font-family:var(--font); margin-bottom:18px; } .navbtn svg{ width:20px; height:20px; }
+</style>
+</head>
+<body>
+<div id="home"></div>
+<div id="stage" class="hidden"></div>
+<div id="handle" title="Open controls"><span class="bar"></span><span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg></span></div>
+<div id="backdrop"></div>
+<div id="panel">
+  <div class="panel-head"><span class="grip"></span>
+    <div class="t"><span data-en="Director controls" data-tr="Yönetmen paneli">Director controls</span><span data-en="backstage" data-tr="kulis">backstage</span></div>
+    <button class="x" id="closeBtn">×</button>
+  </div>
+  <div class="panel-body" id="panelBody"></div>
+</div>
+<script>
+(function(){
+var lang='en', mode='home', timer=null, tok=0;
+var reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+var state={ fmod:'steps', scene:'idle', tscenario:'step_complete', tstyle:'minimal', loop:false };
+
+function svgI(p,sw){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="'+(sw||2)+'" stroke-linecap="round" stroke-linejoin="round">'+p+'</svg>'; }
+var IC={
+  steps:'<path d="M7 4c2 0 3 2 3 5s-3 5-3 8 1 3 1 3M15 4c-2 0-3 2-3 5s3 5 3 8-1 3-1 3"/>',
+  heart:'<path d="M12 21s-7-4.5-9.5-9C1 8.5 3 5 6.5 5 9 5 12 8 12 8s3-3 5.5-3C21 5 23 8.5 21.5 12 19 16.5 12 21 12 21z"/>',
+  moon:'<path d="M20 14a8 8 0 1 1-9-11 6.5 6.5 0 0 0 9 11z"/>',
+  dumbbell:'<path d="M6 8v8M3 10v4M18 8v8M21 10v4M6 12h12"/>',
+  drop:'<path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/>',
+  leaf:'<path d="M11 20A7 7 0 0 1 4 13c0-5 4-9 16-9 0 10-5 13-9 13z"/><path d="M11 20c0-5 2-8 6-10"/>',
+  timer:'<circle cx="12" cy="13" r="8"/><path d="M12 13V9M9 2h6M19.5 5.5L21 7"/>',
+  flame:'<path d="M12 3c1 3 4 4 4 8a4 4 0 0 1-8 0c0-1 .5-2 1-2 0 2 2 2 2 0 0-2-1-3 1-6z"/>',
+  activity:'<path d="M3 12h4l2-7 4 14 2-7h6"/>',
+  bell:'<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21h4"/>',
+  target:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.6"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3.5 2"/>',
+  user:'<circle cx="12" cy="8" r="4"/><path d="M5 20c0-3.5 3.1-6 7-6s7 2.5 7 6"/>'
+};
+function status(){ return '<div class="statusbar"><span>9:24</span><span class="sig">'+
+  '<svg width="19" height="13" viewBox="0 0 19 13"><rect class="stroke" x="0" y="9" width="3" height="4" rx="1"/><rect class="stroke" x="5" y="6" width="3" height="7" rx="1"/><rect class="stroke" x="10" y="3" width="3" height="10" rx="1"/><rect class="stroke" x="15" y="0" width="3" height="13" rx="1"/></svg>'+
+  '<svg width="17" height="13" viewBox="0 0 17 13"><path class="stroke" d="M8.5 2.5c2.6 0 5 1 6.8 2.7l-1.4 1.5C12.5 5.4 10.6 4.6 8.5 4.6S4.5 5.4 3.1 6.7L1.7 5.2C3.5 3.5 5.9 2.5 8.5 2.5z"/></svg>'+
+  '<svg width="27" height="13" viewBox="0 0 27 13"><rect x="0" y="0" width="22" height="13" rx="3.5" fill="none" stroke-width="1.4" style="stroke:var(--statusink)"/><rect class="stroke" x="2" y="2" width="16" height="9" rx="1.8"/><rect class="stroke" x="23" y="4" width="2.2" height="5" rx="1"/></svg>'+
+  '</span></div>'; }
+function applyLang(scope){ scope.querySelectorAll('[data-en]').forEach(function(el){ var x=el.getAttribute('data-'+lang); if(x!==null) el.textContent=x; }); }
+var raf={a:null,b:null};
+function stopAnims(){ if(raf.a){cancelAnimationFrame(raf.a);raf.a=null;} if(raf.b){cancelAnimationFrame(raf.b);raf.b=null;} }
+function restart(el){ el.style.animation='none'; void el.offsetWidth; el.style.animation=''; }
+var stage=document.getElementById('stage'), home=document.getElementById('home');
+
+/* ===== styles + helpers ===== */
+var TSTYLE={ minimal:{a:'#1F2937',a2:'#4B5563',dark:false}, calm:{a:'#3BA98C',a2:'#5FC9AC',dark:false}, active:{a:'#F2674A',a2:'#FF9166',dark:false}, dark:{a:'#5BE0CF',a2:'#86F0E2',dark:true}, soft:{a:'#E2A04A',a2:'#F2C078',dark:false}, senior:{a:'#2D8CFF',a2:'#5BA8FF',dark:false} };
+function tAccent(){ var S=TSTYLE[state.tstyle]; stage.style.setProperty('--accent',S.a); stage.style.setProperty('--accent-2',S.a2); }
+function applyStyle(){ var d=TSTYLE[state.tstyle].dark; document.body.classList.toggle('dark',d); var sw=document.getElementById('themeSw'); if(sw) sw.classList.toggle('on',d); }
+function lbl(en,tr){ return '<p class="paylabel" style="margin-top:22px" data-en="'+en+'" data-tr="'+tr+'">'+en+'</p>'; }
+function tickDisc(){ return '<div class="suc"><span class="ripple"></span><span class="circle"></span><svg viewBox="0 0 24 24"><path class="tick" d="M5 13l4 4L19 7"/></svg></div>'; }
+function ringHTML(pct,big,subEn,subTr){ var r=82,c=2*Math.PI*r,off=c*(1-pct/100); return '<div class="ringwrap"><svg viewBox="0 0 188 188"><circle class="ring-track" cx="94" cy="94" r="'+r+'"/><circle class="ring-prog" cx="94" cy="94" r="'+r+'" stroke-dasharray="'+c+'" stroke-dashoffset="'+c+'" data-off="'+off+'"/></svg><div class="ring-center"><div class="big">'+big+'</div><div class="sub" data-en="'+subEn+'" data-tr="'+subTr+'">'+subEn+'</div></div></div>'; }
+function countUp(el,target){ if(!el) return; if(reduce){ el.textContent=target.toLocaleString('en-US'); return; } var s=performance.now(),dur=1100; (function f(now){ var p=Math.min(1,(now-s)/dur); var e=1-Math.pow(1-p,3); el.textContent=Math.round(target*e).toLocaleString('en-US'); if(p<1) raf.a=requestAnimationFrame(f); })(performance.now()); }
+
+/* ===== idle + step engine ===== */
+function tRender(name){ if(timer){clearTimeout(timer);timer=null;} stopAnims(); tok++; state.scene=name; tAccent();
+  var inner='<div class="center-col"><div class="disc accent pulse">'+svgI(IC.activity,2)+'</div>'+
+    '<p class="eyebrow" data-en="Ready" data-tr="Hazır">Ready</p>'+
+    '<p class="eyebrow tap-hint" style="margin-top:14px" data-en="Tap to continue" data-tr="Devam için dokun">Tap to continue</p></div>';
+  stage.innerHTML=status()+'<div class="body">'+inner+'</div>'; applyLang(stage); }
+
+function tStep(st){ stopAnims(); tok++; var my=tok; state.scene=st.final?'final':'play'; tAccent();
+  var t=st.type, label = st.en?lbl(st.en,st.tr):'', inner='';
+  var sub = st.sub?'<p class="cap" style="margin-top:10px" data-en="'+st.sub+'" data-tr="'+(st.subtr||st.sub)+'">'+st.sub+'</p>':'';
+  var WTOT=8;
+  if(t==='proc'){ inner='<div class="center-col"><div class="spinner"></div>'+label+sub+'</div>'; }
+  else if(t==='check'){ inner='<div class="center-col">'+tickDisc()+label+sub+'</div>'; }
+  else if(t==='ring'){ inner='<div class="center-col">'+ringHTML(st.pct,st.count?'0':st.big,st.subEn,st.subTr)+label+'</div>'; }
+  else if(t==='heart'){ var col=st.color||'var(--accent)'; var hdur=(95/st.bpm).toFixed(2); inner='<div class="center-col"><div class="disc heartbeat" style="background:color-mix(in srgb,'+col+' 15%,var(--surface));color:'+col+'">'+svgI(IC.heart,1.7)+'</div><div class="fx"><span class="hrnum" style="color:'+col+'">0</span> <span class="unit">bpm</span></div><span class="zonepill" style="background:color-mix(in srgb,'+col+' 16%,var(--surface));color:'+col+'" data-en="'+st.zoneEn+'" data-tr="'+st.zoneTr+'">'+st.zoneEn+'</span><svg class="hrline" viewBox="0 0 300 64" preserveAspectRatio="none"><path class="hrpath" style="stroke:'+col+';animation-duration:'+hdur+'s" d="M0 34 H58 l7 -20 l9 40 l7 -20 H150 l7 -14 l9 28 l7 -14 H300"/></svg>'+label+'</div>'; }
+  else if(t==='sleep'){ var hs=[42,68,92,58,82,48,30], bars=hs.map(function(h){return '<i data-h="'+h+'"></i>';}).join(''); inner='<div class="center-col"><div class="fx" style="color:var(--accent)">7<span class="unit">h</span> 20<span class="unit">m</span></div><div class="cap" style="margin-bottom:16px" data-en="Time asleep" data-tr="Uyku süresi">Time asleep</div><div class="sleepbars">'+bars+'</div>'+label+'</div>'; }
+  else if(t==='timer'){ var r=82,c=2*Math.PI*r,pct=st.run?35:100,off=c*(1-pct/100); var time=st.time||'00:30'; var tdisp=time.replace(':',(st.run?'<span class="blinkcolon">:</span>':':')); inner='<div class="center-col"><div class="ringwrap"><svg viewBox="0 0 188 188"><circle class="ring-track" cx="94" cy="94" r="82"/><circle class="ring-prog" cx="94" cy="94" r="82" stroke-dasharray="'+c+'" stroke-dashoffset="'+c+'" data-off="'+off+'"/></svg><div class="ring-center"><div class="big" style="font-variant-numeric:tabular-nums">'+tdisp+'</div><div class="sub" data-en="'+st.subEn+'" data-tr="'+st.subTr+'">'+st.subEn+'</div></div></div>'+label+'</div>'; }
+  else if(t==='water'){ var gl=''; for(var i=0;i<WTOT;i++) gl+='<span class="glass"></span>'; inner='<div class="center-col"><div class="glasses">'+gl+'</div><div class="fx" style="color:var(--accent)"><span class="waternum">0</span> <span class="unit">/ '+WTOT+'</span></div><div class="cap" data-en="glasses today" data-tr="bugünkü bardak">glasses today</div>'+label+'</div>'; }
+  else if(t==='breathe'){ inner='<div class="center-col"><div class="breathe"><span class="bring"></span><span class="bring b2"></span><span class="core"></span></div>'+label+'<p class="cap" style="margin-top:10px" data-en="Follow the circle" data-tr="Daireyi takip et">Follow the circle</p></div>'; }
+  else if(t==='summary'){ var rows=(st.rows||[]).map(function(r){ return '<div class="trow"><span class="ti">'+svgI(IC[r[0]]||IC.activity,1.7)+'<span data-en="'+r[1]+'" data-tr="'+r[2]+'">'+r[1]+'</span></span>'+(r[3]?'<span class="tv">'+r[3]+'</span>':'<span class="tv" style="color:var(--ok)">&#10003;</span>')+'</div>'; }).join(''); inner='<div class="center-col"><div class="tcard pop-in">'+rows+'</div>'+label+'</div>'; }
+  else if(t==='reminder'){ inner='<div class="center-col"><div class="disc accent">'+svgI(IC[st.ric]||IC.bell,1.7)+'</div>'+label+'<div class="tcard pop-in" style="margin-top:18px"><div class="trow"><span class="ti">'+svgI(IC[st.ric]||IC.bell,1.7)+'<span data-en="'+st.rtEn+'" data-tr="'+st.rtTr+'">'+st.rtEn+'</span></span><span class="tv" data-en="'+st.rtime+'" data-tr="'+(st.rtimeTr||st.rtime)+'">'+st.rtime+'</span></div></div></div>'; }
+  else if(t==='plan'){ var rows=(st.items||[]).map(function(it){ return '<div class="crow"><span class="cbox"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path class="ck" d="M5 13l4 4L19 7"/></svg></span><span class="ctext" data-en="'+it[1]+'" data-tr="'+it[2]+'">'+it[1]+'</span></div>'; }).join(''); inner='<div class="center-col"><div class="clist pop-in">'+rows+'</div>'+label+'</div>'; }
+  stage.innerHTML=status()+'<div class="body">'+inner+'</div>';
+  stage.querySelectorAll('.disc,.suc,.suc *').forEach(restart); applyLang(stage);
+  if(t==='ring'||t==='timer'){ var rp=stage.querySelector('.ring-prog'); if(rp){ if(reduce) rp.style.strokeDashoffset=rp.getAttribute('data-off'); else requestAnimationFrame(function(){ rp.style.strokeDashoffset=rp.getAttribute('data-off'); }); } }
+  if(t==='ring'&&st.count){ countUp(stage.querySelector('.ring-center .big'),st.count); }
+  if(t==='heart') countUp(stage.querySelector('.hrnum'),st.bpm);
+  if(t==='sleep') stage.querySelectorAll('.sleepbars i').forEach(function(b){ var h=b.getAttribute('data-h')+'%'; if(reduce) b.style.height=h; else requestAnimationFrame(function(){ b.style.height=h; }); });
+  if(t==='water'){ var WFIL=st.full?WTOT:6; stage.querySelectorAll('.glass').forEach(function(g,i){ if(i<WFIL){ if(reduce){ g.classList.add('f'); } else setTimeout(function(){ if(my===tok) g.classList.add('f'); }, 240+i*150); } }); countUp(stage.querySelector('.waternum'),WFIL); }
+  if(t==='plan'){ stage.querySelectorAll('.crow').forEach(function(r,i){ if(reduce){ r.classList.add('done'); return; } setTimeout(function(){ if(my===tok) r.classList.add('done'); }, 360+i*440); }); }
+}
+
+var FLOW=(function(){
+  function P(en,tr,dur,sub){ return {type:'proc',en:en,tr:tr,dur:dur||1300,sub:sub}; }
+  return {
+    /* Steps */
+    step_goal:[ P('Updating goal','Hedef güncelleniyor',1200), {type:'ring',pct:100,count:10000,subEn:'step goal',subTr:'adım hedefi',en:'Step Goal Updated',tr:'Adım Hedefi Güncellendi',final:true} ],
+    step_complete:[ P('Finalizing','Tamamlanıyor',1300), {type:'ring',pct:100,count:10000,subEn:'steps',subTr:'adım',en:'Daily Steps Complete',tr:'Günlük Adım Tamam',final:true} ],
+    step_walk:[ P('Updating','Güncelleniyor',1200), {type:'ring',pct:72,count:7240,subEn:'of 10,000',subTr:'/ 10.000',en:'Walking Progress',tr:'Yürüyüş İlerlemesi',final:true} ],
+    step_summary:[ P('Compiling','Derleniyor',1300), {type:'summary',rows:[['steps','Steps','Adım','8,240'],['activity','Distance','Mesafe','5.9 km'],['flame','Calories','Kalori','320']],en:'Activity Summary Ready',tr:'Aktivite Özeti Hazır',final:true} ],
+    /* Sleep */
+    sleep_summary:[ P('Compiling','Derleniyor',1300), {type:'sleep',en:'Sleep Summary Ready',tr:'Uyku Özeti Hazır',final:true} ],
+    sleep_goal:[ P('Updating goal','Hedef güncelleniyor',1200), {type:'ring',pct:100,big:'8h',subEn:'sleep goal',subTr:'uyku hedefi',en:'Sleep Goal Updated',tr:'Uyku Hedefi Güncellendi',final:true} ],
+    sleep_score:[ P('Calculating','Hesaplanıyor',1300), {type:'ring',pct:82,count:82,subEn:'rest score',subTr:'dinlenme skoru',en:'Rest Score Ready',tr:'Dinlenme Skoru Hazır',final:true} ],
+    sleep_night:[ P('Saving','Kaydediliyor',1200), {type:'check',en:'Night Routine Complete',tr:'Gece Rutini Tamam',sub:'Wind down done',subtr:'Sakinleşme tamam',final:true} ],
+    /* Heart rate */
+    hr_updated:[ P('Measuring','Ölçülüyor',1200), {type:'heart',bpm:78,zoneEn:'Active',zoneTr:'Aktif',color:'#2D8CFF',en:'Heart Rate Updated',tr:'Nabız Güncellendi',final:true} ],
+    hr_resting:[ P('Measuring','Ölçülüyor',1300), {type:'heart',bpm:62,zoneEn:'Resting',zoneTr:'Dinlenme',color:'#16A34A',en:'Resting Heart Rate',tr:'Dinlenme Nabzı',final:true} ],
+    hr_workout:[ P('Measuring','Ölçülüyor',1200), {type:'heart',bpm:145,zoneEn:'Workout',zoneTr:'Antrenman',color:'#E0564B',en:'Workout Heart Rate',tr:'Antrenman Nabzı',final:true} ],
+    hr_recovery:[ P('Recovering','Toparlanıyor',1400), {type:'check',en:'Recovery Ready',tr:'Toparlanma Hazır',sub:'Heart rate settled',subtr:'Nabız sakinleşti',final:true} ],
+    /* Workout */
+    wo_start:[ P('Starting','Başlatılıyor',1100), {type:'timer',run:true,time:'00:42',subEn:'elapsed',subTr:'geçen süre',en:'Workout Started',tr:'Antrenman Başladı',final:true} ],
+    wo_complete:[ P('Finishing','Tamamlanıyor',1300), {type:'check',en:'Workout Complete',tr:'Antrenman Tamam',sub:'32 min &middot; 280 kcal',subtr:'32 dk &middot; 280 kcal',final:true} ],
+    wo_timer:[ P('Setting timer','Zamanlayıcı kuruluyor',1100), {type:'timer',run:false,time:'00:30',subEn:'ready',subTr:'hazır',en:'Exercise Timer Ready',tr:'Egzersiz Zamanlayıcı Hazır',final:true} ],
+    wo_plan:[ P('Updating plan','Plan güncelleniyor',1300), {type:'plan',items:[['dumbbell','Warm up','Isınma'],['activity','Cardio','Kardiyo'],['leaf','Cool down','Soğuma']],en:'Training Plan Updated',tr:'Antrenman Planı Güncellendi',final:true} ],
+    /* Hydration */
+    hyd_water:[ P('Preparing','Hazırlanıyor',900), {type:'reminder',ric:'drop',rtEn:'Time to hydrate',rtTr:'Su içme zamanı',rtime:'Now',rtimeTr:'Şimdi',en:'Water Reminder',tr:'Su Hatırlatıcısı',final:true} ],
+    hyd_logged:[ P('Logging','Kaydediliyor',1100), {type:'water',full:false,en:'Hydration Logged',tr:'Su Kaydedildi',final:true} ],
+    hyd_goal:[ P('Updating','Güncelleniyor',1200), {type:'water',full:true,en:'Daily Water Goal',tr:'Günlük Su Hedefi',final:true} ],
+    hyd_check:[ P('Loading','Yükleniyor',1100), {type:'summary',rows:[['drop','Water','Su','6 / 8'],['steps','Steps','Adım','8,240'],['moon','Sleep','Uyku','7h 20m']],en:'Wellness Check-in',tr:'Sağlık Kontrolü',final:true} ],
+    /* Meditation / breathing */
+    med_breath:[ P('Preparing','Hazırlanıyor',1000), {type:'breathe',en:'Breathing Session Ready',tr:'Nefes Seansı Hazır',final:true} ],
+    med_start:[ P('Starting','Başlatılıyor',1000), {type:'breathe',en:'Meditation Started',tr:'Meditasyon Başladı',final:true} ],
+    med_calm:[ P('Finishing','Tamamlanıyor',1300), {type:'check',en:'Calm Timer Complete',tr:'Sakinlik Zamanlayıcı Tamam',sub:'10 min session',subtr:'10 dk seans',final:true} ],
+    med_goal:[ P('Updating','Güncelleniyor',1200), {type:'ring',pct:100,count:7,subEn:'day streak',subTr:'günlük seri',en:'Mindfulness Goal Updated',tr:'Farkındalık Hedefi Güncellendi',final:true} ]
+  };
+})();
+
+function tPlay(){ var steps=FLOW[state.tscenario]||FLOW.step_complete; var i=0;
+  function go(){ var st=steps[i]; tStep(st); var my=tok; i++;
+    if(i<steps.length){ timer=setTimeout(function(){ if(my===tok) go(); }, st.dur||1300); }
+    else if(state.loop){ timer=setTimeout(function(){ if(my===tok) tRender('idle'); }, 3600); } }
+  go(); }
+
+/* ===== stage interactions ===== */
+function stageTap(){ if(mode!=='health') return; if(state.scene==='idle') tPlay(); else if(state.scene==='final') tRender('idle'); }
+stage.addEventListener('click', stageTap);
+document.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+document.addEventListener('selectstart', function(e){ e.preventDefault(); });
+document.addEventListener('dragstart', function(e){ e.preventDefault(); });
+
+/* ===== panel ===== */
+var panel=document.getElementById('panel'), backdrop=document.getElementById('backdrop'), handle=document.getElementById('handle');
+function openPanel(){ panel.classList.add('open'); backdrop.classList.add('open'); }
+function closePanel(){ panel.classList.remove('open'); backdrop.classList.remove('open'); }
+handle.onclick=openPanel; backdrop.onclick=closePanel; document.getElementById('closeBtn').onclick=closePanel;
+function chip(group,val,en,tr){ return '<span class="chip" data-group="'+group+'" data-val="'+val+'" data-en="'+en+'" data-tr="'+tr+'">'+en+'</span>'; }
+var navHTML='<button class="navbtn" id="menuBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg><span data-en="Main menu" data-tr="Ana menü">Main menu</span></button>';
+function optsHTML(){ return '<div class="sec"><div class="lbl" data-en="Filming options" data-tr="Çekim seçenekleri">Filming options</div>'+
+  '<div class="optrow"><span class="on-name" data-en="Loop for filming" data-tr="Çekim için döngü">Loop for filming</span><span class="switch" id="loopSw"></span></div>'+
+  '<div class="optrow"><span class="on-name" data-en="Dark mode" data-tr="Koyu mod">Dark mode</span><span class="switch" id="themeSw"></span></div>'+
+  '<div class="optrow"><span class="on-name" data-en="Language" data-tr="Dil">Language</span><button class="minibtn" id="langBtn">EN</button></div>'+
+  '<button class="resetbtn" id="resetBtn" data-en="Reset to start" data-tr="Başa dön">Reset to start</button></div>'; }
+var SETS={
+  steps:[['step_goal','Step Goal Updated','Adım Hedefi'],['step_complete','Daily Steps Complete','Günlük Adım'],['step_walk','Walking Progress','Yürüyüş'],['step_summary','Activity Summary','Aktivite Özeti']],
+  sleep:[['sleep_summary','Sleep Summary','Uyku Özeti'],['sleep_goal','Sleep Goal Updated','Uyku Hedefi'],['sleep_score','Rest Score Ready','Dinlenme Skoru'],['sleep_night','Night Routine Complete','Gece Rutini']],
+  hr:[['hr_updated','Heart Rate Updated','Nabız Güncellendi'],['hr_resting','Resting Heart Rate','Dinlenme Nabzı'],['hr_workout','Workout Heart Rate','Antrenman Nabzı'],['hr_recovery','Recovery Ready','Toparlanma']],
+  workout:[['wo_start','Workout Started','Antrenman Başladı'],['wo_complete','Workout Complete','Antrenman Tamam'],['wo_timer','Exercise Timer Ready','Egzersiz Zamanlayıcı'],['wo_plan','Training Plan Updated','Antrenman Planı']],
+  hydration:[['hyd_water','Water Reminder','Su Hatırlatıcısı'],['hyd_logged','Hydration Logged','Su Kaydedildi'],['hyd_goal','Daily Water Goal','Günlük Su Hedefi'],['hyd_check','Wellness Check-in','Sağlık Kontrolü']],
+  meditation:[['med_breath','Breathing Session','Nefes Seansı'],['med_start','Meditation Started','Meditasyon Başladı'],['med_calm','Calm Timer Complete','Sakinlik Tamam'],['med_goal','Mindfulness Goal','Farkındalık Hedefi']]
+};
+function buildPanel(){
+  var styles=[['minimal','Minimal','Minimal'],['calm','Calm Wellness','Sakin'],['active','Active','Aktif'],['dark','Dark','Koyu'],['soft','Soft','Yumuşak'],['senior','Senior','Yaşlı']];
+  var grp=SETS[state.fmod]||SETS.steps;
+  var sub='';
+  document.getElementById('panelBody').innerHTML=navHTML+
+    '<div class="sec"><div class="lbl" data-en="Scenario" data-tr="Senaryo">Scenario</div><div class="chips">'+grp.map(function(s){ return chip('tscenario',s[0],s[1],s[2]); }).join('')+'</div></div>'+
+    sub+
+    '<div class="sec"><div class="lbl" data-en="Visual style" data-tr="Görsel stil">Visual style</div><div class="chips">'+styles.map(function(s){ return chip('tstyle',s[0],s[1],s[2]); }).join('')+'</div></div>'+
+    optsHTML();
+  afterPanel();
+}
+function afterPanel(){ refreshChips(); applyLang(panel); var sw=document.getElementById('loopSw'); if(sw) sw.classList.toggle('on',state.loop);
+  var ts=document.getElementById('themeSw'); if(ts) ts.classList.toggle('on',document.body.classList.contains('dark'));
+  var lb=document.getElementById('langBtn'); if(lb) lb.textContent=lang.toUpperCase(); bindOpts(); }
+function setOn(group,val){ panel.querySelectorAll('[data-group="'+group+'"]').forEach(function(c){ c.classList.toggle('on',c.getAttribute('data-val')===val); }); }
+function refreshChips(){ setOn('tscenario',state.tscenario); setOn('tstyle',state.tstyle); }
+panel.addEventListener('click',function(e){
+  var g=e.target.closest('[data-group]'); if(g){ var grp=g.getAttribute('data-group'), v=g.getAttribute('data-val');
+    if(grp==='tscenario'){ state.tscenario=v; }
+    else if(grp==='tstyle'){ state.tstyle=v; applyStyle(); if(mode==='health') tRender('idle'); }
+    refreshChips(); return; }
+});
+function bindOpts(){
+  var mb=document.getElementById('menuBtn'); if(mb) mb.onclick=function(){ goHome(); };
+  var ls=document.getElementById('loopSw'); if(ls) ls.onclick=function(){ state.loop=!state.loop; this.classList.toggle('on',state.loop); };
+  var ts=document.getElementById('themeSw'); if(ts) ts.onclick=function(){ var d=!document.body.classList.contains('dark'); document.body.classList.toggle('dark',d); this.classList.toggle('on',d); };
+  var lb=document.getElementById('langBtn'); if(lb) lb.onclick=function(){ lang=(lang==='en'?'tr':'en'); document.documentElement.lang=lang; this.textContent=lang.toUpperCase(); applyLang(document); };
+  var rb=document.getElementById('resetBtn'); if(rb) rb.onclick=function(){ if(mode==='health') tRender('idle'); };
+}
+
+/* ===== home ===== */
+var sectors=[
+  {id:'steps',en:'Steps',tr:'Adımlar',icon:'steps',c:'#2D8CFF'},
+  {id:'sleep',en:'Sleep',tr:'Uyku',icon:'moon',c:'#6C4BE6'},
+  {id:'hr',en:'Heart Rate',tr:'Nabız',icon:'heart',c:'#E0564B'},
+  {id:'workout',en:'Workout',tr:'Antrenman',icon:'dumbbell',c:'#F2674A'},
+  {id:'hydration',en:'Hydration',tr:'Su',icon:'drop',c:'#22A5C9'},
+  {id:'meditation',en:'Meditation',tr:'Meditasyon',icon:'leaf',c:'#3BA98C'}
+];
+var TMODS={ steps:'step_complete', sleep:'sleep_summary', hr:'hr_updated', workout:'wo_complete', hydration:'hyd_logged', meditation:'med_breath' };
+function buildHome(){
+  var grid=sectors.map(function(s){ return '<button class="sector" data-sector="'+s.id+'">'+
+    '<div class="sicon" style="background:linear-gradient(135deg,'+s.c+', color-mix(in srgb,'+s.c+' 70%, #fff))">'+svgI(IC[s.icon]||'')+'</div>'+
+    '<div class="sname" data-en="'+s.en+'" data-tr="'+s.tr+'">'+s.en+'</div></button>'; }).join('');
+  home.innerHTML=status()+'<div class="body"><div style="padding:6px 0 18px"><span class="brandmark">FITNESS</span>'+
+    '<div class="h1" style="margin-top:14px" data-en="Choose a module" data-tr="Bir modül seç">Choose a module</div>'+
+    '<div class="muted" style="margin-top:4px" data-en="Open a screen to film" data-tr="Çekmek için bir ekran aç">Open a screen to film</div></div>'+
+    '<div class="home-grid">'+grid+'</div></div>';
+  applyLang(home);
+}
+home.addEventListener('click',function(e){ var s=e.target.closest('[data-sector]'); if(!s) return; goMod(s.getAttribute('data-sector')); });
+function goMod(id){ mode='health'; state.fmod=id; state.tscenario=TMODS[id]||'step_complete'; home.classList.add('hidden'); stage.classList.remove('hidden'); buildPanel(); applyStyle(); closePanel(); tRender('idle'); }
+function goHome(){ mode='home'; stopAnims(); stage.classList.add('hidden'); home.classList.remove('hidden'); document.body.classList.remove('dark'); closePanel(); }
+
+/* init */
+buildHome();
+})();
+</script>
+</body>
+</html>
