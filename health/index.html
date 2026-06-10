@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Health App — Stock Filming Tool</title>
+<style>
+:root{
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --bg:#F2F3F6; --surface:#FFFFFF; --surface-2:#F6F7F9;
+  --text:#0E1116; --muted:#6A7280; --faint:#9AA1AC; --line:#E6E8EC;
+  --shadow:0 18px 50px -24px rgba(16,20,30,.30); --shadow-sm:0 6px 20px -12px rgba(16,20,30,.30);
+  --ok:#11936B; --ok-soft:#E6F5EE; --statusink:#0E1116;
+  --accent:#2D8CFF; --accent-2:#5BA8FF; --accent-soft:color-mix(in srgb,var(--accent) 13%,var(--surface));
+}
+.dark{
+  --bg:#0B0D11; --surface:#15191F; --surface-2:#1B2027;
+  --text:#F3F5F8; --muted:#9BA3AE; --faint:#6B7480; --line:#262C34;
+  --shadow:0 24px 60px -22px rgba(0,0,0,.7); --shadow-sm:0 8px 24px -14px rgba(0,0,0,.6);
+  --ok:#2FBE8C; --ok-soft:#11271F; --statusink:#F3F5F8;
+  --accent-soft:color-mix(in srgb,var(--accent) 22%,var(--surface));
+}
+*{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; -webkit-touch-callout:none;
+  -webkit-user-select:none; -moz-user-select:none; -ms-user-select:none; user-select:none; -webkit-user-drag:none; }
+html,body{ height:100%; margin:0; }
+body{ font-family:var(--font); background:var(--bg); color:var(--text); overflow:hidden; position:fixed; inset:0; transition:background .35s,color .35s; touch-action:manipulation; }
+#home,#stage{ position:absolute; inset:0; display:flex; flex-direction:column; background:var(--bg); }
+#stage{ cursor:pointer; }
+.hidden{ display:none !important; }
+.statusbar{ flex:0 0 auto; height:54px; padding:0 26px 8px; display:flex; align-items:flex-end; justify-content:space-between; color:var(--statusink); font-size:15px; font-weight:600; }
+.statusbar .sig{ display:flex; align-items:center; gap:7px; } .statusbar .stroke{ fill:var(--statusink); }
+.body{ flex:1; display:flex; flex-direction:column; padding:0 24px; }
+.center-col{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; }
+.eyebrow{ font-size:12.5px; font-weight:700; letter-spacing:.18em; text-transform:uppercase; color:var(--muted); }
+.paylabel{ font-size:30px; font-weight:800; letter-spacing:-.02em; line-height:1.12; }
+.h1{ font-size:30px; font-weight:800; letter-spacing:-.02em; line-height:1.1; }
+.brandmark{ font-size:15px; font-weight:800; letter-spacing:.30em; text-transform:uppercase; }
+.muted{ color:var(--muted); } .small{ font-size:13.5px; }
+.tap-hint{ animation:hintFade 1.8s ease-in-out infinite; } @keyframes hintFade{ 0%,100%{opacity:.5} 50%{opacity:1} }
+
+.disc{ width:150px; height:150px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin-bottom:24px; animation:pop .5s cubic-bezier(.2,.9,.3,1.3) both; }
+.disc svg{ width:64px; height:64px; }
+.disc.accent{ background:var(--accent-soft); color:var(--accent); }
+.disc.pulse{ animation:pop .5s both, discPulse 1.9s .45s ease-in-out infinite; }
+@keyframes discPulse{ 0%,100%{transform:scale(1)} 50%{transform:scale(1.05)} }
+@keyframes pop{ 0%{transform:scale(.45);opacity:0} 100%{transform:scale(1);opacity:1} }
+.spinner{ width:116px; height:116px; border-radius:50%; border:6px solid var(--line); border-top-color:var(--accent); animation:spin 1s linear infinite; margin-bottom:24px; }
+@keyframes spin{ to{ transform:rotate(360deg); } }
+
+/* success tick */
+.suc{ position:relative; width:150px; height:150px; display:flex; align-items:center; justify-content:center; margin-bottom:24px; }
+.suc .ripple{ position:absolute; inset:0; border-radius:50%; border:3px solid var(--accent); opacity:0; animation:ripple .85s .1s ease-out; }
+.suc .circle{ position:absolute; inset:0; border-radius:50%; background:var(--accent); animation:pop .42s cubic-bezier(.2,.9,.3,1.3) both; }
+.suc svg{ position:relative; z-index:2; width:78px; height:78px; }
+.suc .tick{ fill:none; stroke:#fff; stroke-width:3; stroke-linecap:round; stroke-linejoin:round; stroke-dasharray:80; stroke-dashoffset:80; animation:draw .5s .2s ease forwards; }
+@keyframes draw{ to{ stroke-dashoffset:0; } }
+@keyframes ripple{ 0%{transform:scale(.55);opacity:.55} 100%{transform:scale(1.7);opacity:0} }
+
+/* cards */
+.tcard{ width:90%; max-width:350px; background:var(--surface); border:1px solid var(--line); border-radius:20px; box-shadow:var(--shadow-sm); padding:20px; text-align:left; }
+.pop-in{ animation:cardIn .5s cubic-bezier(.2,.9,.3,1.2) both; } @keyframes cardIn{ 0%{opacity:0;transform:translateY(16px) scale(.97)} 100%{opacity:1;transform:none} }
+.trow{ display:flex; align-items:center; justify-content:space-between; padding:11px 0; border-bottom:1px solid var(--line); } .trow:last-child{ border-bottom:none; }
+.trow .ti{ display:flex; align-items:center; gap:11px; font-weight:650; font-size:15px; } .trow .ti svg{ width:20px; height:20px; color:var(--accent); }
+.trow .tv{ color:var(--muted); font-size:14px; font-weight:600; }
+.cap{ font-size:12.5px; color:var(--muted); font-weight:600; text-align:center; }
+.fx{ font-size:44px; font-weight:800; letter-spacing:-.02em; text-align:center; }
+.unit{ font-size:17px; color:var(--muted); font-weight:600; }
+.ringwrap{ position:relative; width:188px; height:188px; margin-bottom:10px; }
+.ringwrap svg{ width:188px; height:188px; transform:rotate(-90deg); }
+.ring-track{ fill:none; stroke:var(--line); stroke-width:14; }
+.ring-prog{ fill:none; stroke:var(--accent); stroke-width:14; stroke-linecap:round; transition:stroke-dashoffset 1.4s cubic-bezier(.2,.7,.2,1); }
+.ring-center{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+.ring-center .big{ font-size:36px; font-weight:800; letter-spacing:-.02em; } .ring-center .sub{ font-size:12px; color:var(--muted); font-weight:700; letter-spacing:.1em; text-transform:uppercase; }
+.vcall{ width:90%; max-width:350px; border-radius:24px; overflow:hidden; box-shadow:var(--shadow-sm); border:1px solid var(--line); }
+.vcall .feed{ position:relative; height:240px; background:linear-gradient(160deg,var(--accent),var(--accent-2)); display:flex; align-items:center; justify-content:center; }
+.vcall .feed .avatar{ width:100px; height:100px; border-radius:50%; background:rgba(255,255,255,.22); display:flex; align-items:center; justify-content:center; color:#fff; } .vcall .feed .avatar svg{ width:56px; height:56px; }
+.vcall .selfie{ position:absolute; right:12px; bottom:12px; width:56px; height:76px; border-radius:11px; background:rgba(0,0,0,.26); border:1.5px solid rgba(255,255,255,.5); }
+.vcall .nm{ position:absolute; left:14px; bottom:13px; color:#fff; font-weight:750; font-size:15px; text-shadow:0 1px 5px rgba(0,0,0,.35); }
+.vcall .ctrls{ display:flex; align-items:center; justify-content:center; gap:18px; padding:16px; background:var(--surface); }
+.vcall .cbtn{ width:52px; height:52px; border-radius:50%; background:var(--surface-2); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; color:var(--text); } .vcall .cbtn svg{ width:23px; height:23px; }
+.vcall .cbtn.end{ background:#E0564B; border-color:transparent; color:#fff; }
+.live-dot{ display:inline-flex; align-items:center; gap:6px; position:absolute; left:14px; top:13px; color:#fff; font-size:11px; font-weight:800; letter-spacing:.14em; }
+.live-dot::before{ content:""; width:8px; height:8px; border-radius:50%; background:#fff; animation:blink2 1.2s infinite; } @keyframes blink2{ 0%,100%{opacity:1} 50%{opacity:.25} }
+.hrline{ width:100%; max-width:300px; height:64px; display:block; margin-top:6px; }
+.hrpath{ fill:none; stroke:var(--accent); stroke-width:3; stroke-linecap:round; stroke-linejoin:round; stroke-dasharray:620; stroke-dashoffset:620; animation:hrdraw 1.7s linear infinite; } @keyframes hrdraw{ to{ stroke-dashoffset:0; } }
+.heartbeat{ animation:hb 1s ease-in-out infinite; } @keyframes hb{ 0%,100%{transform:scale(1)} 16%{transform:scale(1.17)} 30%{transform:scale(1)} 44%{transform:scale(1.1)} 60%{transform:scale(1)} }
+.sleepbars{ display:flex; align-items:flex-end; gap:8px; height:96px; width:84%; max-width:300px; margin-bottom:6px; }
+.sleepbars i{ flex:1; background:var(--accent); border-radius:5px 5px 2px 2px; height:0; transition:height .8s cubic-bezier(.2,.7,.2,1); opacity:.85; }
+
+/* home */
+.home-grid{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:13px; padding-bottom:84px; }
+.sector{ background:var(--surface); border:1px solid var(--line); border-radius:22px; padding:18px 8px 16px; text-align:center; cursor:pointer; position:relative; transition:transform .12s; }
+.sector:active{ transform:scale(.96); }
+.sector .sicon{ width:50px; height:50px; border-radius:15px; margin:0 auto 10px; display:flex; align-items:center; justify-content:center; color:#fff; }
+.sector .sicon svg{ width:24px; height:24px; }
+.sector .sname{ font-size:12.5px; font-weight:650; }
+
+/* handle + panel */
+#handle{ position:fixed; left:50%; bottom:0; transform:translateX(-50%); width:180px; height:54px; z-index:40; cursor:pointer; background:transparent; border:none; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding-top:7px; }
+#handle .bar{ width:56px; height:6px; border-radius:999px; background:var(--faint); opacity:.65; transition:opacity .2s,transform .2s; }
+#handle .chev{ margin-top:4px; color:var(--faint); opacity:.6; } #handle .chev svg{ width:18px; height:18px; display:block; }
+#handle:active .bar,#handle:active .chev{ opacity:1; } #handle:active .bar{ transform:scaleX(1.18); }
+#backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.45); opacity:0; visibility:hidden; transition:opacity .3s,visibility .3s; z-index:60; }
+#backdrop.open{ opacity:1; visibility:visible; }
+#panel{ position:fixed; left:0; right:0; bottom:0; max-height:88vh; background:var(--surface); border-radius:24px 24px 0 0; box-shadow:0 -22px 60px -20px rgba(0,0,0,.55); border-top:1px solid var(--line); transform:translateY(101%); transition:transform .34s cubic-bezier(.2,.7,.25,1); z-index:61; display:flex; flex-direction:column; }
+#panel.open{ transform:translateY(0); }
+.panel-head{ display:flex; align-items:center; justify-content:space-between; padding:16px 20px 12px; border-bottom:1px solid var(--line); position:relative; }
+.panel-head .grip{ position:absolute; left:50%; top:7px; transform:translateX(-50%); width:42px; height:5px; border-radius:999px; background:var(--line); }
+.panel-head .t{ font-size:17px; font-weight:750; } .panel-head .t span:last-child{ color:var(--muted); font-weight:500; font-size:13px; margin-left:8px; }
+.panel-head .x{ width:38px; height:38px; border-radius:50%; border:1px solid var(--line); background:var(--surface-2); color:var(--text); font-size:19px; cursor:pointer; }
+.panel-body{ overflow-y:auto; padding:18px 20px 26px; }
+.sec{ margin-bottom:20px; } .sec:last-child{ margin-bottom:0; }
+.sec .lbl{ font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); font-weight:700; margin-bottom:10px; }
+.chips{ display:flex; gap:8px; flex-wrap:wrap; }
+.chip{ display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:10px 15px; border-radius:13px; background:var(--surface-2); color:var(--text); font-size:14px; font-weight:600; border:1.5px solid var(--line); cursor:pointer; }
+.chip.on{ background:var(--accent); color:#fff; border-color:transparent; }
+.optrow{ display:flex; align-items:center; justify-content:space-between; padding:13px 0; border-bottom:1px solid var(--line); } .optrow:last-child{ border-bottom:none; }
+.optrow .on-name{ font-size:15px; font-weight:600; }
+.switch{ width:52px; height:31px; border-radius:999px; background:var(--line); position:relative; cursor:pointer; flex:0 0 auto; transition:background .2s; } .switch.on{ background:var(--accent); }
+.switch::after{ content:""; position:absolute; top:3px; left:3px; width:25px; height:25px; border-radius:50%; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.3); transition:left .2s; } .switch.on::after{ left:24px; }
+.minibtn{ padding:9px 16px; border-radius:11px; border:1.5px solid var(--line); background:var(--surface-2); color:var(--text); font-weight:650; font-size:14px; cursor:pointer; font-family:var(--font); }
+.resetbtn{ width:100%; padding:14px; border-radius:14px; border:none; background:var(--accent); color:#fff; font-weight:700; font-size:16px; cursor:pointer; font-family:var(--font); margin-top:6px; }
+.navbtn{ width:100%; display:flex; align-items:center; gap:10px; padding:14px 16px; border-radius:14px; border:1px solid var(--line); background:var(--surface-2); color:var(--text); font-weight:700; font-size:15px; cursor:pointer; font-family:var(--font); margin-bottom:18px; } .navbtn svg{ width:20px; height:20px; }
+</style>
+</head>
+<body>
+<div id="home"></div>
+<div id="stage" class="hidden"></div>
+<div id="handle" title="Open controls"><span class="bar"></span><span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg></span></div>
+<div id="backdrop"></div>
+<div id="panel">
+  <div class="panel-head"><span class="grip"></span>
+    <div class="t"><span data-en="Director controls" data-tr="Yönetmen paneli">Director controls</span><span data-en="backstage" data-tr="kulis">backstage</span></div>
+    <button class="x" id="closeBtn">×</button>
+  </div>
+  <div class="panel-body" id="panelBody"></div>
+</div>
+<script>
+(function(){
+var lang='en', mode='home', timer=null, tok=0;
+var reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+var state={ fmod:'telemed', scene:'idle', tscenario:'tele_doctor', tstyle:'modern', loop:false };
+
+function svgI(p,sw){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="'+(sw||2)+'" stroke-linecap="round" stroke-linejoin="round">'+p+'</svg>'; }
+var IC={
+  heart:'<path d="M12 21s-7-4.5-9.5-9C1 8.5 3 5 6.5 5 9 5 12 8 12 8s3-3 5.5-3C21 5 23 8.5 21.5 12 19 16.5 12 21 12 21z"/>',
+  stetho:'<path d="M6 3v5a4 4 0 0 0 8 0V3"/><path d="M6 3H4M14 3h2M10 16v1a4 4 0 0 0 8 0v-2"/><circle cx="18" cy="13" r="2"/>',
+  pill:'<rect x="3" y="8" width="18" height="8" rx="4"/><path d="M12 8v8"/>',
+  cal:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/>',
+  video:'<rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3z"/>',
+  user:'<circle cx="12" cy="8" r="4"/><path d="M5 20c0-3.5 3.1-6 7-6s7 2.5 7 6"/>',
+  moon:'<path d="M20 14a8 8 0 1 1-9-11 6.5 6.5 0 0 0 9 11z"/>',
+  steps:'<path d="M7 4c2 0 3 2 3 5s-3 5-3 8 1 3 1 3M15 4c-2 0-3 2-3 5s3 5 3 8-1 3-1 3"/>',
+  drop:'<path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/>',
+  note:'<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/>',
+  baby:'<circle cx="12" cy="6" r="2.5"/><path d="M12 8.5v6M8 11h8M9 20l3-5 3 5"/>',
+  gauge:'<path d="M4 18a8 8 0 1 1 16 0"/><path d="M12 18l4.5-4.5"/><circle cx="12" cy="18" r="1.5"/>',
+  mic:'<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4"/>',
+  cam:'<rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3z"/>',
+  phone:'<path d="M3 5.5C3 4.7 3.7 4 4.5 4h2.6c.6 0 1.1.4 1.3 1l1 3c.1.5 0 1-.4 1.3L8 11c1 2 2.5 3.5 4.5 4.5l1.6-1.4c.3-.4.8-.5 1.3-.4l3 1c.6.2 1 .7 1 1.3v2.6c0 .8-.7 1.5-1.5 1.5C9.8 20 4 14.2 4 6.5z"/>',
+  rx:'<rect x="7" y="8" width="10" height="12" rx="2"/><path d="M6 8h12M9 5h6v3H9zM10 13h4M12 13v4"/>',
+  bell:'<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21h4"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3.5 2"/>'
+};
+function status(){ return '<div class="statusbar"><span>9:24</span><span class="sig">'+
+  '<svg width="19" height="13" viewBox="0 0 19 13"><rect class="stroke" x="0" y="9" width="3" height="4" rx="1"/><rect class="stroke" x="5" y="6" width="3" height="7" rx="1"/><rect class="stroke" x="10" y="3" width="3" height="10" rx="1"/><rect class="stroke" x="15" y="0" width="3" height="13" rx="1"/></svg>'+
+  '<svg width="17" height="13" viewBox="0 0 17 13"><path class="stroke" d="M8.5 2.5c2.6 0 5 1 6.8 2.7l-1.4 1.5C12.5 5.4 10.6 4.6 8.5 4.6S4.5 5.4 3.1 6.7L1.7 5.2C3.5 3.5 5.9 2.5 8.5 2.5z"/></svg>'+
+  '<svg width="27" height="13" viewBox="0 0 27 13"><rect x="0" y="0" width="22" height="13" rx="3.5" fill="none" stroke-width="1.4" style="stroke:var(--statusink)"/><rect class="stroke" x="2" y="2" width="16" height="9" rx="1.8"/><rect class="stroke" x="23" y="4" width="2.2" height="5" rx="1"/></svg>'+
+  '</span></div>'; }
+function applyLang(scope){ scope.querySelectorAll('[data-en]').forEach(function(el){ var x=el.getAttribute('data-'+lang); if(x!==null) el.textContent=x; }); }
+var raf={a:null,b:null};
+function stopAnims(){ if(raf.a){cancelAnimationFrame(raf.a);raf.a=null;} if(raf.b){cancelAnimationFrame(raf.b);raf.b=null;} }
+function restart(el){ el.style.animation='none'; void el.offsetWidth; el.style.animation=''; }
+var stage=document.getElementById('stage'), home=document.getElementById('home');
+
+/* ===== styles + helpers ===== */
+var TSTYLE={ modern:{a:'#2D8CFF',a2:'#5BA8FF',dark:false}, calm:{a:'#3BA98C',a2:'#5FC9AC',dark:false}, tele:{a:'#5A6BE0',a2:'#8794FF',dark:false}, preg:{a:'#E07A9B',a2:'#F3A0BC',dark:false}, senior:{a:'#C98A3A',a2:'#E0AE63',dark:false}, dark:{a:'#37D6A8',a2:'#5BE0CF',dark:true} };
+function tAccent(){ var S=TSTYLE[state.tstyle]; stage.style.setProperty('--accent',S.a); stage.style.setProperty('--accent-2',S.a2); }
+function applyStyle(){ var d=TSTYLE[state.tstyle].dark; document.body.classList.toggle('dark',d); var sw=document.getElementById('themeSw'); if(sw) sw.classList.toggle('on',d); }
+function lbl(en,tr){ return '<p class="paylabel" style="margin-top:22px" data-en="'+en+'" data-tr="'+tr+'">'+en+'</p>'; }
+function tickDisc(){ return '<div class="suc"><span class="ripple"></span><span class="circle"></span><svg viewBox="0 0 24 24"><path class="tick" d="M5 13l4 4L19 7"/></svg></div>'; }
+function ringHTML(pct,big,subEn,subTr){ var r=82,c=2*Math.PI*r,off=c*(1-pct/100); return '<div class="ringwrap"><svg viewBox="0 0 188 188"><circle class="ring-track" cx="94" cy="94" r="'+r+'"/><circle class="ring-prog" cx="94" cy="94" r="'+r+'" stroke-dasharray="'+c+'" stroke-dashoffset="'+c+'" data-off="'+off+'"/></svg><div class="ring-center"><div class="big">'+big+'</div><div class="sub" data-en="'+subEn+'" data-tr="'+subTr+'">'+subEn+'</div></div></div>'; }
+function countUp(el,target){ if(!el) return; if(reduce){ el.textContent=target.toLocaleString('en-US'); return; } var s=performance.now(),dur=1100; (function f(now){ var p=Math.min(1,(now-s)/dur); var e=1-Math.pow(1-p,3); el.textContent=Math.round(target*e).toLocaleString('en-US'); if(p<1) raf.a=requestAnimationFrame(f); })(performance.now()); }
+
+/* ===== idle + step engine ===== */
+function tRender(name){ if(timer){clearTimeout(timer);timer=null;} stopAnims(); tok++; state.scene=name; tAccent();
+  var inner='<div class="center-col"><div class="disc accent pulse heartbeat">'+svgI(IC.heart,1.9)+'</div>'+
+    '<p class="eyebrow" data-en="Ready" data-tr="Hazır">Ready</p>'+
+    '<p class="eyebrow tap-hint" style="margin-top:14px" data-en="Tap to continue" data-tr="Devam için dokun">Tap to continue</p></div>';
+  stage.innerHTML=status()+'<div class="body">'+inner+'</div>'; applyLang(stage); }
+
+function tStep(st){ stopAnims(); tok++; var my=tok; state.scene=st.final?'final':'play'; tAccent();
+  var t=st.type, label = st.en?lbl(st.en,st.tr):'', inner='';
+  var sub = st.sub?'<p class="cap" style="margin-top:10px" data-en="'+st.sub+'" data-tr="'+(st.subtr||st.sub)+'">'+st.sub+'</p>':'';
+  if(t==='proc'){ inner='<div class="center-col"><div class="spinner"></div>'+label+sub+'</div>'; }
+  else if(t==='check'){ inner='<div class="center-col">'+tickDisc()+label+sub+'</div>'; }
+  else if(t==='video'){ inner='<div class="center-col"><div class="vcall pop-in"><div class="feed"><span class="live-dot" data-en="LIVE" data-tr="CANLI">LIVE</span><div class="avatar">'+svgI(IC.user,1.6)+'</div><span class="nm" data-en="Care Team" data-tr="Sağlık Ekibi">Care Team</span><span class="selfie"></span></div><div class="ctrls"><span class="cbtn">'+svgI(IC.mic,1.8)+'</span><span class="cbtn">'+svgI(IC.cam,1.8)+'</span><span class="cbtn end">'+svgI(IC.phone,1.7)+'</span></div></div>'+label+'</div>'; }
+  else if(t==='cal'){ inner='<div class="center-col"><div class="tcard pop-in"><div style="display:flex;align-items:center;gap:14px;margin-bottom:8px"><div class="disc accent" style="width:56px;height:56px;margin:0;flex-direction:column"><div style="font-size:11px;font-weight:700;opacity:.85" data-en="WED" data-tr="ÇAR">WED</div><div style="font-size:20px;font-weight:800;line-height:1">14</div></div><div><div style="font-weight:800;font-size:17px" data-en="Consultation" data-tr="Konsültasyon">Consultation</div><div class="cap" style="text-align:left" data-en="In-person &middot; 30 min" data-tr="Yüz yüze &middot; 30 dk">In-person &middot; 30 min</div></div></div><div class="trow"><span class="ti">'+svgI(IC.clock,1.8)+'<span data-en="Time" data-tr="Saat">Time</span></span><span class="tv">10:30</span></div></div>'+label+'</div>'; }
+  else if(t==='med'){ inner='<div class="center-col"><div class="disc accent">'+svgI(IC.pill,1.7)+'</div>'+label+'<div class="tcard pop-in" style="margin-top:18px"><div class="trow"><span class="ti">'+svgI(IC.clock,1.7)+'<span data-en="Morning dose" data-tr="Sabah dozu">Morning dose</span></span><span class="tv">08:00</span></div><div class="trow"><span class="ti">'+svgI(IC.pill,1.7)+'<span data-en="Daily supplement" data-tr="Günlük takviye">Daily supplement</span></span><span class="tv" data-en="1 tablet" data-tr="1 tablet">1 tablet</span></div></div></div>'; }
+  else if(t==='rx'){ inner='<div class="center-col"><div class="disc accent">'+svgI(IC.rx,1.7)+'</div>'+label+'<div class="tcard pop-in" style="margin-top:18px"><div class="trow"><span class="ti">'+svgI(IC.note,1.7)+'<span data-en="Status" data-tr="Durum">Status</span></span><span class="tv" data-en="Ready for pickup" data-tr="Teslime hazır">Ready for pickup</span></div><div class="trow"><span class="ti">'+svgI(IC.pill,1.7)+'<span data-en="Refills left" data-tr="Kalan yenileme">Refills left</span></span><span class="tv">2</span></div></div></div>'; }
+  else if(t==='ring'){ inner='<div class="center-col">'+ringHTML(st.pct,st.big,st.subEn,st.subTr)+label+'</div>'; }
+  else if(t==='summary'){ var rows=(st.rows||[]).map(function(r){ return '<div class="trow"><span class="ti">'+svgI(IC[r[0]]||IC.note,1.7)+'<span data-en="'+r[1]+'" data-tr="'+r[2]+'">'+r[1]+'</span></span>'+(r[3]?'<span class="tv">'+r[3]+'</span>':'<span class="tv" style="color:var(--ok)">&#10003;</span>')+'</div>'; }).join(''); inner='<div class="center-col"><div class="tcard pop-in">'+rows+'</div>'+label+'</div>'; }
+  else if(t==='heart'){ inner='<div class="center-col"><div class="disc accent heartbeat">'+svgI(IC.heart,1.7)+'</div><div class="fx"><span class="hrnum" style="color:var(--accent)">0</span> <span class="unit">bpm</span></div><svg class="hrline" viewBox="0 0 300 64" preserveAspectRatio="none"><path class="hrpath" d="M0 34 H58 l7 -20 l9 40 l7 -20 H150 l7 -14 l9 28 l7 -14 H300"/></svg>'+label+'</div>'; }
+  else if(t==='bp'){ inner='<div class="center-col"><div class="disc accent">'+svgI(IC.gauge,1.7)+'</div><div class="fx" style="color:var(--accent)">120<span class="unit"> / </span>80</div><div class="cap" style="margin-top:4px">mmHg</div>'+label+'</div>'; }
+  else if(t==='sleep'){ var hs=[42,68,92,58,82,48,30], bars=hs.map(function(h){return '<i data-h="'+h+'"></i>';}).join(''); inner='<div class="center-col"><div class="fx" style="color:var(--accent)">7<span class="unit">h</span> 20<span class="unit">m</span></div><div class="cap" style="margin-bottom:16px" data-en="Time asleep" data-tr="Uyku süresi">Time asleep</div><div class="sleepbars">'+bars+'</div>'+label+'</div>'; }
+  stage.innerHTML=status()+'<div class="body">'+inner+'</div>';
+  stage.querySelectorAll('.disc,.suc,.suc *').forEach(restart); applyLang(stage);
+  if(t==='ring'){ var rp=stage.querySelector('.ring-prog'); if(rp){ if(reduce) rp.style.strokeDashoffset=rp.getAttribute('data-off'); else requestAnimationFrame(function(){ rp.style.strokeDashoffset=rp.getAttribute('data-off'); }); } }
+  if(t==='heart') countUp(stage.querySelector('.hrnum'),72);
+  if(t==='sleep') stage.querySelectorAll('.sleepbars i').forEach(function(b){ var h=b.getAttribute('data-h')+'%'; if(reduce) b.style.height=h; else requestAnimationFrame(function(){ b.style.height=h; }); });
+}
+
+var FLOW=(function(){
+  function P(en,tr,dur,sub){ return {type:'proc',en:en,tr:tr,dur:dur||1300,sub:sub}; }
+  return {
+    /* Telemedicine */
+    tele_connect:[ P('Securing connection','Bağlantı kuruluyor',900), {type:'proc',en:'Connecting',tr:'Bağlanıyor',final:true} ],
+    tele_doctor:[ P('Connecting','Bağlanıyor',1200), {type:'video',en:'Doctor Available',tr:'Doktor Müsait',final:true} ],
+    tele_videoready:[ P('Connecting','Bağlanıyor',1200), {type:'video',en:'Video Consultation Ready',tr:'Görüntülü Görüşme Hazır',final:true} ],
+    tele_followup:[ P('Scheduling','Planlanıyor',1300), {type:'cal',en:'Follow-up Scheduled',tr:'Kontrol Planlandı',final:true} ],
+    /* Appointments */
+    ap_search:[ P('Connecting','Bağlanıyor',900), {type:'proc',en:'Searching Availability',tr:'Uygunluk Aranıyor',final:true} ],
+    ap_available:[ P('Searching availability','Uygunluk aranıyor',1400), {type:'cal',en:'Appointment Available',tr:'Randevu Uygun',final:true} ],
+    ap_confirmed:[ P('Booking','Oluşturuluyor',1400), {type:'check',en:'Appointment Confirmed',tr:'Randevu Onaylandı',sub:'Wed 14 &middot; 10:30',subtr:'Çar 14 &middot; 10:30',final:true} ],
+    ap_updated:[ P('Updating','Güncelleniyor',1200), {type:'cal',en:'Appointment Updated',tr:'Randevu Güncellendi',final:true} ],
+    /* Medication */
+    med_reminder:[ P('Preparing','Hazırlanıyor',900), {type:'med',en:'Medication Reminder',tr:'İlaç Hatırlatıcısı',final:true} ],
+    med_dose:[ P('Logging dose','Doz kaydediliyor',1100), {type:'check',en:'Dose Logged',tr:'Doz Kaydedildi',sub:'Morning &middot; 08:00',subtr:'Sabah &middot; 08:00',final:true} ],
+    med_refill:[ P('Checking refills','Yenilemeler kontrol ediliyor',1200), {type:'rx',en:'Refill Reminder',tr:'Yenileme Hatırlatıcısı',final:true} ],
+    med_rx:[ P('Preparing prescription','Reçete hazırlanıyor',1400), {type:'rx',en:'Prescription Ready',tr:'Reçete Hazır',final:true} ],
+    /* Symptom check */
+    sym_check:[ P('Starting check','Kontrol başlıyor',1000), {type:'summary',rows:[['heart','Energy','Enerji','Good'],['moon','Sleep','Uyku','7h'],['drop','Hydration','Su','OK']],en:'Symptom Check',tr:'Belirti Kontrolü',final:true} ],
+    sym_assess:[ P('Reviewing','Değerlendiriliyor',1400), {type:'summary',rows:[['note','General guidance','Genel öneri',''],['heart','Rest and hydrate','Dinlen ve su iç','']],en:'Assessment Ready',tr:'Değerlendirme Hazır',final:true} ],
+    sym_summary:[ P('Compiling','Derleniyor',1300), {type:'summary',rows:[['heart','Resting heart rate','Dinlenme nabzı','72'],['moon','Sleep','Uyku','7h 20m'],['steps','Activity','Aktivite','8,240']],en:'Health Summary Ready',tr:'Sağlık Özeti Hazır',final:true} ],
+    sym_care:[ P('Preparing guidance','Öneriler hazırlanıyor',1300), {type:'summary',rows:[['drop','Stay hydrated','Su için',''],['steps','Light activity','Hafif aktivite',''],['moon','Rest well','İyi dinlen','']],en:'Care Recommendation Ready',tr:'Bakım Önerisi Hazır',final:true} ],
+    /* Pregnancy & wellness */
+    preg_week:[ P('Updating tracker','İzleyici güncelleniyor',1100), {type:'ring',pct:45,big:'18',subEn:'weeks',subTr:'hafta',en:'Week Tracker',tr:'Hafta Takibi',final:true} ],
+    preg_checkin:[ P('Saving check-in','Kayıt ediliyor',1100), {type:'summary',rows:[['heart','Mood','Ruh hali','Good'],['drop','Hydration','Su','5 glasses'],['moon','Sleep','Uyku','7h']],en:'Daily Check-in',tr:'Günlük Kontrol',final:true} ],
+    preg_wellness:[ P('Compiling','Derleniyor',1300), {type:'summary',rows:[['steps','Steps','Adım','6,500'],['moon','Sleep','Uyku','7h 40m'],['drop','Water','Su','6 glasses']],en:'Wellness Summary',tr:'Sağlıklı Yaşam Özeti',final:true} ],
+    preg_activity:[ P('Logging activity','Aktivite kaydediliyor',1100), {type:'check',en:'Activity Logged',tr:'Aktivite Kaydedildi',sub:'Walk &middot; 25 min',subtr:'Yürüyüş &middot; 25 dk',final:true} ],
+    /* Vital tracking */
+    vit_hr:[ P('Measuring','Ölçülüyor',1200), {type:'heart',en:'Heart Rate Updated',tr:'Nabız Güncellendi',final:true} ],
+    vit_bp:[ P('Measuring','Ölçülüyor',1300), {type:'bp',en:'Blood Pressure Logged',tr:'Tansiyon Kaydedildi',final:true} ],
+    vit_sleep:[ P('Compiling','Derleniyor',1200), {type:'sleep',en:'Sleep Summary',tr:'Uyku Özeti',final:true} ],
+    vit_activity:[ P('Updating','Güncelleniyor',1100), {type:'ring',pct:82,big:'8,240',subEn:'steps',subTr:'adım',en:'Daily Activity Logged',tr:'Günlük Aktivite Kaydedildi',final:true} ]
+  };
+})();
+
+function tPlay(){ var steps=FLOW[state.tscenario]||FLOW.tele_doctor; var i=0;
+  function go(){ var st=steps[i]; tStep(st); var my=tok; i++;
+    if(i<steps.length){ timer=setTimeout(function(){ if(my===tok) go(); }, st.dur||1300); }
+    else if(state.loop){ timer=setTimeout(function(){ if(my===tok) tRender('idle'); }, 3600); } }
+  go(); }
+
+/* ===== stage interactions ===== */
+function stageTap(){ if(mode!=='health') return; if(state.scene==='idle') tPlay(); else if(state.scene==='final') tRender('idle'); }
+stage.addEventListener('click', stageTap);
+document.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+document.addEventListener('selectstart', function(e){ e.preventDefault(); });
+document.addEventListener('dragstart', function(e){ e.preventDefault(); });
+
+/* ===== panel ===== */
+var panel=document.getElementById('panel'), backdrop=document.getElementById('backdrop'), handle=document.getElementById('handle');
+function openPanel(){ panel.classList.add('open'); backdrop.classList.add('open'); }
+function closePanel(){ panel.classList.remove('open'); backdrop.classList.remove('open'); }
+handle.onclick=openPanel; backdrop.onclick=closePanel; document.getElementById('closeBtn').onclick=closePanel;
+function chip(group,val,en,tr){ return '<span class="chip" data-group="'+group+'" data-val="'+val+'" data-en="'+en+'" data-tr="'+tr+'">'+en+'</span>'; }
+var navHTML='<button class="navbtn" id="menuBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg><span data-en="Main menu" data-tr="Ana menü">Main menu</span></button>';
+function optsHTML(){ return '<div class="sec"><div class="lbl" data-en="Filming options" data-tr="Çekim seçenekleri">Filming options</div>'+
+  '<div class="optrow"><span class="on-name" data-en="Loop for filming" data-tr="Çekim için döngü">Loop for filming</span><span class="switch" id="loopSw"></span></div>'+
+  '<div class="optrow"><span class="on-name" data-en="Dark mode" data-tr="Koyu mod">Dark mode</span><span class="switch" id="themeSw"></span></div>'+
+  '<div class="optrow"><span class="on-name" data-en="Language" data-tr="Dil">Language</span><button class="minibtn" id="langBtn">EN</button></div>'+
+  '<button class="resetbtn" id="resetBtn" data-en="Reset to start" data-tr="Başa dön">Reset to start</button></div>'; }
+var SETS={
+  telemed:[['tele_connect','Connecting','Bağlanıyor'],['tele_doctor','Doctor Available','Doktor Müsait'],['tele_videoready','Video Consultation','Görüntülü Görüşme'],['tele_followup','Follow-up Scheduled','Kontrol Planlandı']],
+  appts:[['ap_search','Searching Availability','Uygunluk Aranıyor'],['ap_available','Appointment Available','Randevu Uygun'],['ap_confirmed','Appointment Confirmed','Randevu Onaylandı'],['ap_updated','Appointment Updated','Randevu Güncellendi']],
+  meds:[['med_reminder','Medication Reminder','İlaç Hatırlatıcısı'],['med_dose','Dose Logged','Doz Kaydedildi'],['med_refill','Refill Reminder','Yenileme Hatırlatıcısı'],['med_rx','Prescription Ready','Reçete Hazır']],
+  symptom:[['sym_check','Symptom Check','Belirti Kontrolü'],['sym_assess','Assessment Ready','Değerlendirme Hazır'],['sym_summary','Health Summary','Sağlık Özeti'],['sym_care','Care Recommendation','Bakım Önerisi']],
+  preg:[['preg_week','Week Tracker','Hafta Takibi'],['preg_checkin','Daily Check-in','Günlük Kontrol'],['preg_wellness','Wellness Summary','Yaşam Özeti'],['preg_activity','Activity Logged','Aktivite Kaydı']],
+  vitals:[['vit_hr','Heart Rate','Nabız'],['vit_bp','Blood Pressure','Tansiyon'],['vit_sleep','Sleep Summary','Uyku Özeti'],['vit_activity','Daily Activity','Günlük Aktivite']]
+};
+function buildPanel(){
+  var styles=[['modern','Modern','Modern'],['calm','Calm','Sakin'],['tele','Telemedicine','Tele'],['preg','Pregnancy','Gebelik'],['senior','Senior','Yaşlı'],['dark','Dark','Koyu']];
+  var grp=SETS[state.fmod]||SETS.telemed;
+  document.getElementById('panelBody').innerHTML=navHTML+
+    '<div class="sec"><div class="lbl" data-en="Scenario" data-tr="Senaryo">Scenario</div><div class="chips">'+grp.map(function(s){ return chip('tscenario',s[0],s[1],s[2]); }).join('')+'</div></div>'+
+    '<div class="sec"><div class="lbl" data-en="Visual style" data-tr="Görsel stil">Visual style</div><div class="chips">'+styles.map(function(s){ return chip('tstyle',s[0],s[1],s[2]); }).join('')+'</div></div>'+
+    optsHTML();
+  afterPanel();
+}
+function afterPanel(){ refreshChips(); applyLang(panel); var sw=document.getElementById('loopSw'); if(sw) sw.classList.toggle('on',state.loop);
+  var ts=document.getElementById('themeSw'); if(ts) ts.classList.toggle('on',document.body.classList.contains('dark'));
+  var lb=document.getElementById('langBtn'); if(lb) lb.textContent=lang.toUpperCase(); bindOpts(); }
+function setOn(group,val){ panel.querySelectorAll('[data-group="'+group+'"]').forEach(function(c){ c.classList.toggle('on',c.getAttribute('data-val')===val); }); }
+function refreshChips(){ setOn('tscenario',state.tscenario); setOn('tstyle',state.tstyle); }
+panel.addEventListener('click',function(e){
+  var g=e.target.closest('[data-group]'); if(g){ var grp=g.getAttribute('data-group'), v=g.getAttribute('data-val');
+    if(grp==='tscenario'){ state.tscenario=v; }
+    else if(grp==='tstyle'){ state.tstyle=v; applyStyle(); if(mode==='health') tRender('idle'); }
+    refreshChips(); return; }
+});
+function bindOpts(){
+  var mb=document.getElementById('menuBtn'); if(mb) mb.onclick=function(){ goHome(); };
+  var ls=document.getElementById('loopSw'); if(ls) ls.onclick=function(){ state.loop=!state.loop; this.classList.toggle('on',state.loop); };
+  var ts=document.getElementById('themeSw'); if(ts) ts.onclick=function(){ var d=!document.body.classList.contains('dark'); document.body.classList.toggle('dark',d); this.classList.toggle('on',d); };
+  var lb=document.getElementById('langBtn'); if(lb) lb.onclick=function(){ lang=(lang==='en'?'tr':'en'); document.documentElement.lang=lang; this.textContent=lang.toUpperCase(); applyLang(document); };
+  var rb=document.getElementById('resetBtn'); if(rb) rb.onclick=function(){ if(mode==='health') tRender('idle'); };
+}
+
+/* ===== home ===== */
+var sectors=[
+  {id:'telemed',en:'Telemedicine',tr:'Tele-tıp',icon:'video',c:'#5A6BE0'},
+  {id:'appts',en:'Appointments',tr:'Randevular',icon:'cal',c:'#2D8CFF'},
+  {id:'meds',en:'Medication',tr:'İlaç',icon:'pill',c:'#3BA98C'},
+  {id:'symptom',en:'Symptom Check',tr:'Belirti',icon:'stetho',c:'#0E8F6E'},
+  {id:'preg',en:'Pregnancy & Wellness',tr:'Gebelik & Sağlık',icon:'baby',c:'#E07A9B'},
+  {id:'vitals',en:'Vital Tracking',tr:'Yaşamsal Takip',icon:'heart',c:'#E0564B'}
+];
+var TMODS={ telemed:'tele_doctor', appts:'ap_confirmed', meds:'med_reminder', symptom:'sym_summary', preg:'preg_week', vitals:'vit_hr' };
+function buildHome(){
+  var grid=sectors.map(function(s){ return '<button class="sector" data-sector="'+s.id+'">'+
+    '<div class="sicon" style="background:linear-gradient(135deg,'+s.c+', color-mix(in srgb,'+s.c+' 70%, #fff))">'+svgI(IC[s.icon]||'')+'</div>'+
+    '<div class="sname" data-en="'+s.en+'" data-tr="'+s.tr+'">'+s.en+'</div></button>'; }).join('');
+  home.innerHTML=status()+'<div class="body"><div style="padding:6px 0 18px"><span class="brandmark">HEALTH</span>'+
+    '<div class="h1" style="margin-top:14px" data-en="Choose a module" data-tr="Bir modül seç">Choose a module</div>'+
+    '<div class="muted" style="margin-top:4px" data-en="Open a screen to film" data-tr="Çekmek için bir ekran aç">Open a screen to film</div></div>'+
+    '<div class="home-grid">'+grid+'</div></div>';
+  applyLang(home);
+}
+home.addEventListener('click',function(e){ var s=e.target.closest('[data-sector]'); if(!s) return; goMod(s.getAttribute('data-sector')); });
+function goMod(id){ mode='health'; state.fmod=id; state.tscenario=TMODS[id]||'tele_doctor'; home.classList.add('hidden'); stage.classList.remove('hidden'); buildPanel(); applyStyle(); closePanel(); tRender('idle'); }
+function goHome(){ mode='home'; stopAnims(); stage.classList.add('hidden'); home.classList.remove('hidden'); document.body.classList.remove('dark'); closePanel(); }
+
+/* init */
+buildHome();
+})();
+</script>
+</body>
+</html>
