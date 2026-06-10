@@ -86,6 +86,7 @@ body{ font-family:var(--font); background:var(--bg); color:var(--text); overflow
 .heartbeat{ animation:hb 1s ease-in-out infinite; } @keyframes hb{ 0%,100%{transform:scale(1)} 16%{transform:scale(1.17)} 30%{transform:scale(1)} 44%{transform:scale(1.1)} 60%{transform:scale(1)} }
 .sleepbars{ display:flex; align-items:flex-end; gap:8px; height:96px; width:84%; max-width:300px; margin-bottom:6px; }
 .sleepbars i{ flex:1; background:var(--accent); border-radius:5px 5px 2px 2px; height:0; transition:height .8s cubic-bezier(.2,.7,.2,1); opacity:.85; }
+.zonepill{ display:inline-block; margin-top:12px; padding:7px 16px; border-radius:999px; font-size:13.5px; font-weight:750; letter-spacing:.02em; }
 
 /* home */
 .home-grid{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:13px; padding-bottom:84px; }
@@ -139,7 +140,7 @@ body{ font-family:var(--font); background:var(--bg); color:var(--text); overflow
 (function(){
 var lang='en', mode='home', timer=null, tok=0;
 var reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-var state={ fmod:'telemed', scene:'idle', tscenario:'tele_doctor', tstyle:'modern', loop:false };
+var state={ fmod:'telemed', scene:'idle', tscenario:'tele_doctor', tstyle:'modern', loop:false, hrlevel:'normal', pregweek:'18' };
 
 function svgI(p,sw){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="'+(sw||2)+'" stroke-linecap="round" stroke-linejoin="round">'+p+'</svg>'; }
 var IC={
@@ -175,6 +176,8 @@ var stage=document.getElementById('stage'), home=document.getElementById('home')
 
 /* ===== styles + helpers ===== */
 var TSTYLE={ modern:{a:'#2D8CFF',a2:'#5BA8FF',dark:false}, calm:{a:'#3BA98C',a2:'#5FC9AC',dark:false}, tele:{a:'#5A6BE0',a2:'#8794FF',dark:false}, preg:{a:'#E07A9B',a2:'#F3A0BC',dark:false}, senior:{a:'#C98A3A',a2:'#E0AE63',dark:false}, dark:{a:'#37D6A8',a2:'#5BE0CF',dark:true} };
+var HRLEVELS={ low:{bpm:48,en:'Low',tr:'Düşük',c:'#3B82F6'}, normal:{bpm:72,en:'Normal',tr:'Normal',c:'#16A34A'}, elevated:{bpm:98,en:'Elevated',tr:'Yüksek',c:'#E0A23A'}, high:{bpm:128,en:'High',tr:'Çok Yüksek',c:'#E0564B'} };
+var SIZES={ '8':['a raspberry','bir ahududu'], '18':['a bell pepper','bir dolmalık biber'], '30':['a cabbage','bir lahana'], '40':['a small pumpkin','küçük bir balkabağı'] };
 function tAccent(){ var S=TSTYLE[state.tstyle]; stage.style.setProperty('--accent',S.a); stage.style.setProperty('--accent-2',S.a2); }
 function applyStyle(){ var d=TSTYLE[state.tstyle].dark; document.body.classList.toggle('dark',d); var sw=document.getElementById('themeSw'); if(sw) sw.classList.toggle('on',d); }
 function lbl(en,tr){ return '<p class="paylabel" style="margin-top:22px" data-en="'+en+'" data-tr="'+tr+'">'+en+'</p>'; }
@@ -198,15 +201,19 @@ function tStep(st){ stopAnims(); tok++; var my=tok; state.scene=st.final?'final'
   else if(t==='cal'){ inner='<div class="center-col"><div class="tcard pop-in"><div style="display:flex;align-items:center;gap:14px;margin-bottom:8px"><div class="disc accent" style="width:56px;height:56px;margin:0;flex-direction:column"><div style="font-size:11px;font-weight:700;opacity:.85" data-en="WED" data-tr="ÇAR">WED</div><div style="font-size:20px;font-weight:800;line-height:1">14</div></div><div><div style="font-weight:800;font-size:17px" data-en="Consultation" data-tr="Konsültasyon">Consultation</div><div class="cap" style="text-align:left" data-en="In-person &middot; 30 min" data-tr="Yüz yüze &middot; 30 dk">In-person &middot; 30 min</div></div></div><div class="trow"><span class="ti">'+svgI(IC.clock,1.8)+'<span data-en="Time" data-tr="Saat">Time</span></span><span class="tv">10:30</span></div></div>'+label+'</div>'; }
   else if(t==='med'){ inner='<div class="center-col"><div class="disc accent">'+svgI(IC.pill,1.7)+'</div>'+label+'<div class="tcard pop-in" style="margin-top:18px"><div class="trow"><span class="ti">'+svgI(IC.clock,1.7)+'<span data-en="Morning dose" data-tr="Sabah dozu">Morning dose</span></span><span class="tv">08:00</span></div><div class="trow"><span class="ti">'+svgI(IC.pill,1.7)+'<span data-en="Daily supplement" data-tr="Günlük takviye">Daily supplement</span></span><span class="tv" data-en="1 tablet" data-tr="1 tablet">1 tablet</span></div></div></div>'; }
   else if(t==='rx'){ inner='<div class="center-col"><div class="disc accent">'+svgI(IC.rx,1.7)+'</div>'+label+'<div class="tcard pop-in" style="margin-top:18px"><div class="trow"><span class="ti">'+svgI(IC.note,1.7)+'<span data-en="Status" data-tr="Durum">Status</span></span><span class="tv" data-en="Ready for pickup" data-tr="Teslime hazır">Ready for pickup</span></div><div class="trow"><span class="ti">'+svgI(IC.pill,1.7)+'<span data-en="Refills left" data-tr="Kalan yenileme">Refills left</span></span><span class="tv">2</span></div></div></div>'; }
-  else if(t==='ring'){ inner='<div class="center-col">'+ringHTML(st.pct,st.big,st.subEn,st.subTr)+label+'</div>'; }
+  else if(t==='ring'){ var rpct=st.pct,rbig=st.big,rse=st.subEn,rst=st.subTr; if(st.dyn==='week'){ var ww=parseInt(state.pregweek,10)||18; rpct=Math.round(ww/40*100); rbig=String(ww); rse='of 40 weeks'; rst='/ 40 hafta'; } inner='<div class="center-col">'+ringHTML(rpct,rbig,rse,rst)+label+'</div>'; }
+  else if(t==='due'){ var dw=parseInt(state.pregweek,10)||18; var days=(40-dw)*7; var dd=new Date(); dd.setDate(dd.getDate()+days); var MO=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][dd.getMonth()]; var wtg=40-dw; var goEn=wtg>0?(wtg+' weeks to go'):'Full term'; var goTr=wtg>0?(wtg+' hafta kaldı'):'Tam dönem'; inner='<div class="center-col"><div class="tcard pop-in" style="text-align:center"><div class="cap" data-en="Estimated due date" data-tr="Tahmini doğum tarihi">Estimated due date</div><div class="fx" style="color:var(--accent);margin:6px 0 4px">'+dd.getDate()+' '+MO+'</div><div class="trow" style="justify-content:center;gap:20px"><span class="ti">'+svgI(IC.cal,1.7)+'<span data-en="Week '+dw+' of 40" data-tr="40 haftada '+dw+'. hafta">Week '+dw+' of 40</span></span></div><div class="trow" style="justify-content:center"><span class="ti" style="color:var(--accent)">'+svgI(IC.baby,1.7)+'<span data-en="'+goEn+'" data-tr="'+goTr+'">'+goEn+'</span></span></div></div>'+label+'</div>'; }
+  else if(t==='babysize'){ var bw=parseInt(state.pregweek,10)||18; var sz=SIZES[String(bw)]||SIZES['18']; inner='<div class="center-col"><div class="disc accent">'+svgI(IC.baby,1.7)+'</div><div class="paylabel" style="margin-top:6px" data-en="Week '+bw+'" data-tr="'+bw+'. hafta">Week '+bw+'</div><div class="cap" style="margin-top:8px;max-width:280px" data-en="About the size of '+sz[0]+'" data-tr="Yaklaşık '+sz[1]+' boyutunda">About the size of '+sz[0]+'</div>'+label+'</div>'; }
+  else if(t==='kicks'){ inner='<div class="center-col"><div class="disc accent heartbeat">'+svgI(IC.baby,1.7)+'</div><div class="fx" style="color:var(--accent)"><span class="kicknum">0</span></div><div class="cap" data-en="movements today" data-tr="bugünkü hareket">movements today</div><div class="cap" style="margin-top:6px;color:var(--accent)" data-en="Goal 10" data-tr="Hedef 10">Goal 10</div>'+label+'</div>'; }
   else if(t==='summary'){ var rows=(st.rows||[]).map(function(r){ return '<div class="trow"><span class="ti">'+svgI(IC[r[0]]||IC.note,1.7)+'<span data-en="'+r[1]+'" data-tr="'+r[2]+'">'+r[1]+'</span></span>'+(r[3]?'<span class="tv">'+r[3]+'</span>':'<span class="tv" style="color:var(--ok)">&#10003;</span>')+'</div>'; }).join(''); inner='<div class="center-col"><div class="tcard pop-in">'+rows+'</div>'+label+'</div>'; }
-  else if(t==='heart'){ inner='<div class="center-col"><div class="disc accent heartbeat">'+svgI(IC.heart,1.7)+'</div><div class="fx"><span class="hrnum" style="color:var(--accent)">0</span> <span class="unit">bpm</span></div><svg class="hrline" viewBox="0 0 300 64" preserveAspectRatio="none"><path class="hrpath" d="M0 34 H58 l7 -20 l9 40 l7 -20 H150 l7 -14 l9 28 l7 -14 H300"/></svg>'+label+'</div>'; }
+  else if(t==='heart'){ var H=HRLEVELS[state.hrlevel]||HRLEVELS.normal; var hdur=(95/H.bpm).toFixed(2); inner='<div class="center-col"><div class="disc heartbeat" style="background:color-mix(in srgb,'+H.c+' 15%,var(--surface));color:'+H.c+'">'+svgI(IC.heart,1.7)+'</div><div class="fx"><span class="hrnum" style="color:'+H.c+'">0</span> <span class="unit">bpm</span></div><span class="zonepill" style="background:color-mix(in srgb,'+H.c+' 16%,var(--surface));color:'+H.c+'" data-en="'+H.en+'" data-tr="'+H.tr+'">'+H.en+'</span><svg class="hrline" viewBox="0 0 300 64" preserveAspectRatio="none"><path class="hrpath" style="stroke:'+H.c+';animation-duration:'+hdur+'s" d="M0 34 H58 l7 -20 l9 40 l7 -20 H150 l7 -14 l9 28 l7 -14 H300"/></svg>'+label+'</div>'; }
   else if(t==='bp'){ inner='<div class="center-col"><div class="disc accent">'+svgI(IC.gauge,1.7)+'</div><div class="fx" style="color:var(--accent)">120<span class="unit"> / </span>80</div><div class="cap" style="margin-top:4px">mmHg</div>'+label+'</div>'; }
   else if(t==='sleep'){ var hs=[42,68,92,58,82,48,30], bars=hs.map(function(h){return '<i data-h="'+h+'"></i>';}).join(''); inner='<div class="center-col"><div class="fx" style="color:var(--accent)">7<span class="unit">h</span> 20<span class="unit">m</span></div><div class="cap" style="margin-bottom:16px" data-en="Time asleep" data-tr="Uyku süresi">Time asleep</div><div class="sleepbars">'+bars+'</div>'+label+'</div>'; }
   stage.innerHTML=status()+'<div class="body">'+inner+'</div>';
   stage.querySelectorAll('.disc,.suc,.suc *').forEach(restart); applyLang(stage);
   if(t==='ring'){ var rp=stage.querySelector('.ring-prog'); if(rp){ if(reduce) rp.style.strokeDashoffset=rp.getAttribute('data-off'); else requestAnimationFrame(function(){ rp.style.strokeDashoffset=rp.getAttribute('data-off'); }); } }
-  if(t==='heart') countUp(stage.querySelector('.hrnum'),72);
+  if(t==='heart'){ var HH=HRLEVELS[state.hrlevel]||HRLEVELS.normal; countUp(stage.querySelector('.hrnum'),HH.bpm); }
+  if(t==='kicks') countUp(stage.querySelector('.kicknum'),10);
   if(t==='sleep') stage.querySelectorAll('.sleepbars i').forEach(function(b){ var h=b.getAttribute('data-h')+'%'; if(reduce) b.style.height=h; else requestAnimationFrame(function(){ b.style.height=h; }); });
 }
 
@@ -234,7 +241,10 @@ var FLOW=(function(){
     sym_summary:[ P('Compiling','Derleniyor',1300), {type:'summary',rows:[['heart','Resting heart rate','Dinlenme nabzı','72'],['moon','Sleep','Uyku','7h 20m'],['steps','Activity','Aktivite','8,240']],en:'Health Summary Ready',tr:'Sağlık Özeti Hazır',final:true} ],
     sym_care:[ P('Preparing guidance','Öneriler hazırlanıyor',1300), {type:'summary',rows:[['drop','Stay hydrated','Su için',''],['steps','Light activity','Hafif aktivite',''],['moon','Rest well','İyi dinlen','']],en:'Care Recommendation Ready',tr:'Bakım Önerisi Hazır',final:true} ],
     /* Pregnancy & wellness */
-    preg_week:[ P('Updating tracker','İzleyici güncelleniyor',1100), {type:'ring',pct:45,big:'18',subEn:'weeks',subTr:'hafta',en:'Week Tracker',tr:'Hafta Takibi',final:true} ],
+    preg_week:[ P('Updating tracker','İzleyici güncelleniyor',1100), {type:'ring',dyn:'week',en:'Week Tracker',tr:'Hafta Takibi',final:true} ],
+    preg_due:[ P('Calculating','Hesaplanıyor',1100), {type:'due',en:'Due Date',tr:'Doğum Tarihi',final:true} ],
+    preg_size:[ P('Updating','Güncelleniyor',1000), {type:'babysize',en:'Baby Size',tr:'Bebek Boyutu',final:true} ],
+    preg_kicks:[ P('Counting movements','Hareketler sayılıyor',1100), {type:'kicks',en:'Kick Counter',tr:'Tekme Sayacı',final:true} ],
     preg_checkin:[ P('Saving check-in','Kayıt ediliyor',1100), {type:'summary',rows:[['heart','Mood','Ruh hali','Good'],['drop','Hydration','Su','5 glasses'],['moon','Sleep','Uyku','7h']],en:'Daily Check-in',tr:'Günlük Kontrol',final:true} ],
     preg_wellness:[ P('Compiling','Derleniyor',1300), {type:'summary',rows:[['steps','Steps','Adım','6,500'],['moon','Sleep','Uyku','7h 40m'],['drop','Water','Su','6 glasses']],en:'Wellness Summary',tr:'Sağlıklı Yaşam Özeti',final:true} ],
     preg_activity:[ P('Logging activity','Aktivite kaydediliyor',1100), {type:'check',en:'Activity Logged',tr:'Aktivite Kaydedildi',sub:'Walk &middot; 25 min',subtr:'Yürüyüş &middot; 25 dk',final:true} ],
@@ -276,14 +286,18 @@ var SETS={
   appts:[['ap_search','Searching Availability','Uygunluk Aranıyor'],['ap_available','Appointment Available','Randevu Uygun'],['ap_confirmed','Appointment Confirmed','Randevu Onaylandı'],['ap_updated','Appointment Updated','Randevu Güncellendi']],
   meds:[['med_reminder','Medication Reminder','İlaç Hatırlatıcısı'],['med_dose','Dose Logged','Doz Kaydedildi'],['med_refill','Refill Reminder','Yenileme Hatırlatıcısı'],['med_rx','Prescription Ready','Reçete Hazır']],
   symptom:[['sym_check','Symptom Check','Belirti Kontrolü'],['sym_assess','Assessment Ready','Değerlendirme Hazır'],['sym_summary','Health Summary','Sağlık Özeti'],['sym_care','Care Recommendation','Bakım Önerisi']],
-  preg:[['preg_week','Week Tracker','Hafta Takibi'],['preg_checkin','Daily Check-in','Günlük Kontrol'],['preg_wellness','Wellness Summary','Yaşam Özeti'],['preg_activity','Activity Logged','Aktivite Kaydı']],
+  preg:[['preg_week','Week Tracker','Hafta Takibi'],['preg_due','Due Date','Doğum Tarihi'],['preg_size','Baby Size','Bebek Boyutu'],['preg_kicks','Kick Counter','Tekme Sayacı'],['preg_checkin','Daily Check-in','Günlük Kontrol'],['preg_wellness','Wellness Summary','Yaşam Özeti'],['preg_activity','Activity Logged','Aktivite Kaydı']],
   vitals:[['vit_hr','Heart Rate','Nabız'],['vit_bp','Blood Pressure','Tansiyon'],['vit_sleep','Sleep Summary','Uyku Özeti'],['vit_activity','Daily Activity','Günlük Aktivite']]
 };
 function buildPanel(){
   var styles=[['modern','Modern','Modern'],['calm','Calm','Sakin'],['tele','Telemedicine','Tele'],['preg','Pregnancy','Gebelik'],['senior','Senior','Yaşlı'],['dark','Dark','Koyu']];
   var grp=SETS[state.fmod]||SETS.telemed;
+  var sub='';
+  if(state.fmod==='vitals'){ var hr=[['low','Low','Düşük'],['normal','Normal','Normal'],['elevated','Elevated','Yüksek'],['high','High','Çok Yüksek']]; sub='<div class="sec"><div class="lbl" data-en="Heart rate level" data-tr="Nabız seviyesi">Heart rate level</div><div class="chips">'+hr.map(function(s){ return chip('hrlevel',s[0],s[1],s[2]); }).join('')+'</div></div>'; }
+  else if(state.fmod==='preg'){ var wk=[['8','Week 8','8. hafta'],['18','Week 18','18. hafta'],['30','Week 30','30. hafta'],['40','Week 40','40. hafta']]; sub='<div class="sec"><div class="lbl" data-en="Week / stage" data-tr="Hafta / dönem">Week / stage</div><div class="chips">'+wk.map(function(s){ return chip('pregweek',s[0],s[1],s[2]); }).join('')+'</div></div>'; }
   document.getElementById('panelBody').innerHTML=navHTML+
     '<div class="sec"><div class="lbl" data-en="Scenario" data-tr="Senaryo">Scenario</div><div class="chips">'+grp.map(function(s){ return chip('tscenario',s[0],s[1],s[2]); }).join('')+'</div></div>'+
+    sub+
     '<div class="sec"><div class="lbl" data-en="Visual style" data-tr="Görsel stil">Visual style</div><div class="chips">'+styles.map(function(s){ return chip('tstyle',s[0],s[1],s[2]); }).join('')+'</div></div>'+
     optsHTML();
   afterPanel();
@@ -292,11 +306,13 @@ function afterPanel(){ refreshChips(); applyLang(panel); var sw=document.getElem
   var ts=document.getElementById('themeSw'); if(ts) ts.classList.toggle('on',document.body.classList.contains('dark'));
   var lb=document.getElementById('langBtn'); if(lb) lb.textContent=lang.toUpperCase(); bindOpts(); }
 function setOn(group,val){ panel.querySelectorAll('[data-group="'+group+'"]').forEach(function(c){ c.classList.toggle('on',c.getAttribute('data-val')===val); }); }
-function refreshChips(){ setOn('tscenario',state.tscenario); setOn('tstyle',state.tstyle); }
+function refreshChips(){ setOn('tscenario',state.tscenario); setOn('tstyle',state.tstyle); setOn('hrlevel',state.hrlevel); setOn('pregweek',state.pregweek); }
 panel.addEventListener('click',function(e){
   var g=e.target.closest('[data-group]'); if(g){ var grp=g.getAttribute('data-group'), v=g.getAttribute('data-val');
     if(grp==='tscenario'){ state.tscenario=v; }
     else if(grp==='tstyle'){ state.tstyle=v; applyStyle(); if(mode==='health') tRender('idle'); }
+    else if(grp==='hrlevel'){ state.hrlevel=v; }
+    else if(grp==='pregweek'){ state.pregweek=v; }
     refreshChips(); return; }
 });
 function bindOpts(){
